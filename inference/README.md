@@ -101,3 +101,9 @@ Lessons found while building this, each with the fix applied in this repo.
    (here `presence_penalty: 1.5`, `temperature: 1`) applied to every request that doesn't
    override them. llm-bench sets `temperature: 0`; anything else you don't set is the
    model author's choice, not yours.
+
+10. **llama.cpp's throughput gauges reset on every read.** `llamacpp:prompt_tokens_seconds`
+    and `llamacpp:predicted_tokens_seconds` are recomputed and zeroed each time `/metrics`
+    is scraped, so a second scraper (or a curl while debugging) corrupts what Prometheus
+    sees. Fix: derive throughput from the counters, e.g.
+    `rate(llamacpp:tokens_predicted_total[1m])`, as the [Grafana dashboard](../deploy) does.

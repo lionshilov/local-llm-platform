@@ -32,6 +32,9 @@ class Backend(BaseModel):
     )
     max_queue: int = Field(default=0, ge=0, description="Requests allowed to wait for a slot.")
     queue_timeout_s: float = Field(default=30.0, gt=0, description="Longest wait for a slot.")
+    connect_timeout_s: float = Field(
+        default=5.0, gt=0, description="TCP connect timeout; one retry on connect failure."
+    )
     fallbacks: list[str] = Field(
         default_factory=list,
         description="Backends to try, in order, if this one is unreachable, full or failing.",

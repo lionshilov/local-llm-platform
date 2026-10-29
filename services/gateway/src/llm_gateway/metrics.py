@@ -7,11 +7,14 @@ from prometheus_client import (
     CollectorRegistry,
     Counter,
     Gauge,
+    GCCollector,
     Histogram,
+    PlatformCollector,
+    ProcessCollector,
     generate_latest,
 )
 
-_TTFT_BUCKETS = (0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0)
+_TTFT_BUCKETS = (0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 2.5, 5.0, 10.0, 30.0, 60.0)
 _TPOT_BUCKETS = (0.005, 0.01, 0.015, 0.02, 0.03, 0.05, 0.075, 0.1, 0.25, 0.5)
 
 
@@ -20,6 +23,10 @@ class GatewayMetrics:
 
     def __init__(self) -> None:
         self.registry = CollectorRegistry()
+        # CPU, memory, open fds, GC (process metrics are reported on Linux only).
+        ProcessCollector(registry=self.registry)
+        PlatformCollector(registry=self.registry)
+        GCCollector(registry=self.registry)
         labels = ["backend"]
         self.requests = Counter(
             "llm_gateway_requests",
@@ -71,6 +78,15 @@ class GatewayMetrics:
             labels,
             registry=self.registry,
         )
+
+    def init_backend(self, backend: str) -> None:
+        """Create a backend's series up front, so its first error is visible to rate()."""
+        self.requests.labels(backend, "ok")
+        self.in_flight.labels(backend)
+        self.ttft.labels(backend)
+        self.tpot.labels(backend)
+        self.prompt_tokens.labels(backend)
+        self.output_tokens.labels(backend)
 
     def render(self) -> tuple[bytes, str]:
         return generate_latest(self.registry), CONTENT_TYPE_LATEST

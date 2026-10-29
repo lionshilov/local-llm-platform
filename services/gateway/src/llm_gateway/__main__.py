@@ -3,12 +3,23 @@
 from __future__ import annotations
 
 import argparse
+import logging
 from pathlib import Path
 
 import uvicorn
 
 from llm_gateway.app import create_app
 from llm_gateway.config import GatewayConfig
+
+_PROBE_PATHS = ('"GET /metrics ', '"GET /healthz ')
+
+
+class _HideProbes(logging.Filter):
+    """Prometheus scrapes and health checks every few seconds would drown the access log."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        message = record.getMessage()
+        return not any(path in message for path in _PROBE_PATHS)
 
 
 def main() -> None:
@@ -22,7 +33,9 @@ def main() -> None:
     args = parser.parse_args()
 
     app = create_app(GatewayConfig.load(args.config), ui_dir=args.ui_dir)
-    uvicorn.run(app, host=args.host, port=args.port)
+    config = uvicorn.Config(app, host=args.host, port=args.port)  # configures logging
+    logging.getLogger("uvicorn.access").addFilter(_HideProbes())
+    uvicorn.Server(config).run()
 
 
 if __name__ == "__main__":

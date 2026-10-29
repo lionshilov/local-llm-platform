@@ -26,6 +26,9 @@ from llm_gateway.normalize import apply_reasoning_effort, has_generated_text, no
 
 Json = dict[str, Any]
 
+# TPOT from a handful of tokens is dominated by scheduling noise.
+_MIN_TOKENS_FOR_TPOT = 8
+
 
 @dataclass
 class _Retryable:
@@ -65,6 +68,7 @@ class Gateway:
             for name, b in config.backends.items()
         }
         for name, admission in self.admissions.items():
+            self.metrics.init_backend(name)
             self.metrics.queue_depth.labels(name).set_function(
                 functools.partial(_waiting, admission)
             )
@@ -133,23 +137,31 @@ class Gateway:
                 )
             )
 
+        streaming = bool(body.get("stream"))
+        options = body.get("stream_options")
+        client_options: Json = options if isinstance(options, dict) else {}
         streaming_started = False
         try:
             upstream_body = apply_reasoning_effort({**body, "model": backend.model}, backend.engine)
+            if streaming:
+                # Always ask for usage so token counters and TPOT work for every client;
+                # the relay strips it again for clients that didn't ask.
+                upstream_body["stream_options"] = {**client_options, "include_usage": True}
             request = self.client.build_request(
                 "POST",
                 f"{backend.base_url}/chat/completions",
                 json=upstream_body,
                 headers=_auth_headers(backend),
+                timeout=httpx.Timeout(600.0, connect=backend.connect_timeout_s),
             )
             try:
-                upstream = await self.client.send(request, stream=True)
+                upstream = await self._send(request)
             except httpx.HTTPError as exc:
                 self.metrics.requests.labels(name, "upstream_unavailable").inc()
                 return _Retryable(
                     _error(
                         502,
-                        f"backend '{name}' is unreachable: {exc}",
+                        f"backend '{name}' is unreachable: {type(exc).__name__}: {exc}",
                         "upstream_unavailable",
                         headers={"X-Backend": name},
                     )
@@ -167,7 +179,7 @@ class Gateway:
                 )
                 return _Retryable(response) if upstream.status_code >= 500 else response
 
-            if not body.get("stream"):
+            if not streaming:
                 try:
                     payload = json.loads(await upstream.aread())
                 finally:
@@ -178,7 +190,13 @@ class Gateway:
 
             streaming_started = True
             return StreamingResponse(
-                self._relay(upstream, name, started, slot),
+                self._relay(
+                    upstream,
+                    name,
+                    started,
+                    slot,
+                    forward_usage=bool(client_options.get("include_usage")),
+                ),
                 media_type="text/event-stream",
                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "X-Backend": name},
                 # Also release here: if the client disconnects before the first chunk, the
@@ -189,8 +207,25 @@ class Gateway:
             if not streaming_started:
                 slot.release()
 
+    async def _send(self, request: httpx.Request) -> httpx.Response:
+        """Send a request, retrying once if the connection could not be established.
+
+        A connect failure means the engine never saw the request, so the retry cannot
+        duplicate work. Under heavy load Docker Desktop can take seconds to connect.
+        """
+        try:
+            return await self.client.send(request, stream=True)
+        except (httpx.ConnectError, httpx.ConnectTimeout):
+            return await self.client.send(request, stream=True)
+
     async def _relay(
-        self, upstream: httpx.Response, model_id: str, started: float, slot: Slot
+        self,
+        upstream: httpx.Response,
+        model_id: str,
+        started: float,
+        slot: Slot,
+        *,
+        forward_usage: bool,
     ) -> AsyncIterator[bytes]:
         """Re-emit upstream SSE chunks in the gateway's format while timing them.
 
@@ -216,6 +251,10 @@ class Gateway:
                     last_at = time.perf_counter()
                     first_at = first_at or last_at
                 usage = chunk.get("usage") or usage
+                if not forward_usage and "usage" in chunk:
+                    del chunk["usage"]
+                    if not chunk.get("choices"):
+                        continue  # the usage-only chunk this client didn't ask for
                 yield _sse(chunk)
             yield b"data: [DONE]\n\n"
         except (httpx.HTTPError, json.JSONDecodeError) as exc:
@@ -244,7 +283,7 @@ class Gateway:
             return
         self.metrics.ttft.labels(model_id).observe(first_at - started)
         completion_tokens = (usage or {}).get("completion_tokens") or 0
-        if last_at is not None and completion_tokens > 1:
+        if last_at is not None and completion_tokens >= _MIN_TOKENS_FOR_TPOT:
             tpot = (last_at - first_at) / (completion_tokens - 1)
             self.metrics.tpot.labels(model_id).observe(tpot)
 

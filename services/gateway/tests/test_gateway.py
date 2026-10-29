@@ -186,3 +186,52 @@ def test_default_backend_must_exist() -> None:
             default_backend="nope",
             backends={"a": Backend(engine=EngineKind.OPENAI, base_url="http://x/v1", model="m")},
         )
+
+
+async def test_usage_is_requested_upstream_but_only_forwarded_on_request(
+    client: httpx.AsyncClient, server: FakeServer
+) -> None:
+    plain = await client.post("/v1/chat/completions", json={"model": "cpp", "stream": True})
+    assert server.requests[0]["stream_options"] == {"include_usage": True}
+    assert '"usage"' not in plain.text
+
+    body = {"model": "cpp", "stream": True, "stream_options": {"include_usage": True}}
+    asked = await client.post("/v1/chat/completions", json=body)
+    usage_chunks = [c for c in sse_payloads(asked.text)[:-1] if c.get("usage")]
+    assert usage_chunks[-1]["usage"]["completion_tokens"] == 4
+
+    metrics = (await client.get("/metrics")).text
+    assert 'llm_gateway_output_tokens_total{backend="cpp"} 8.0' in metrics
+
+
+async def test_connect_failure_is_retried_once() -> None:
+    server = FakeServer(tokens=2)
+    attempts = 0
+
+    def flaky(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        if request.url.path.endswith("/chat/completions"):
+            attempts += 1
+            if attempts == 1:
+                raise httpx.ConnectError("connection refused", request=request)
+        return server.handler(request)
+
+    app = create_app(make_config(), transport=httpx.MockTransport(flaky))
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://gateway"
+    ) as client:
+        response = await client.post("/v1/chat/completions", json={"model": "cpp", "stream": True})
+
+    assert response.status_code == 200
+    assert attempts == 2
+
+
+async def test_series_exist_before_any_traffic(client: httpx.AsyncClient) -> None:
+    metrics = (await client.get("/metrics")).text
+    assert 'llm_gateway_requests_total{backend="down",outcome="ok"} 0.0' in metrics
+    assert 'llm_gateway_in_flight_requests{backend="olla"} 0.0' in metrics
+
+
+async def test_unreachable_error_names_the_exception(client: httpx.AsyncClient) -> None:
+    response = await client.post("/v1/chat/completions", json={"model": "down", "messages": []})
+    assert "ConnectError" in response.json()["error"]["message"]
