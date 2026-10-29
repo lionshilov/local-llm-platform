@@ -62,7 +62,8 @@ number in the docs can be reproduced.
 |---|---|---|
 | [`inference/`](../inference) | ✅ | Serve one model on llama.cpp, MLX-LM and Ollama with matched settings |
 | [`packages/llm-bench`](../packages/llm-bench) | ✅ | Load generator + latency profiler for any OpenAI-compatible server |
-| `services/gateway` | 🔜 | Routing, fallback, admission control, auth, Prometheus metrics, traces |
+| [`services/gateway`](../services/gateway) | ✅ | Routing, engine-quirk normalization, streaming with cancellation, Prometheus metrics, serves the UI |
+| [`ui/`](../ui) | ✅ | Chat UI with live metrics, thinking mode and a two-engine Arena |
 | `packages/harness` | 🔜 | Tool-calling agent loop from scratch, structured output, sandboxed tools |
 | `packages/evals` | 🔜 | Task suites, LLM-as-judge, quantization quality vs speed |
 | `services/rag` | 🔜 | Local embeddings, vector search, reranking |

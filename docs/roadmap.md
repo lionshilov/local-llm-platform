@@ -12,13 +12,18 @@ Each phase ships something that runs, is tested in CI, and has numbers behind it
 - [ ] Speculative decoding (draft model) on llama.cpp and MLX
 - [ ] Peak memory per engine (Metal allocations, not just RSS)
 
-## Phase 2: Gateway
+## Phase 2: Gateway and chat UI
 
-- [ ] FastAPI service with OpenAI-compatible `/v1/chat/completions` (streaming passthrough)
-- [ ] Routing by model name, health checks, fallback to another engine
-- [ ] Normalize engine quirks: thinking switch, reasoning field names, usage reporting
+- [x] FastAPI service with OpenAI-compatible `/v1/chat/completions` (streaming passthrough)
+- [x] Routing by model name and live backend health in `/v1/models`
+- [x] Normalize engine quirks: thinking switch, reasoning field names
+- [x] Prometheus metrics: TTFT and TPOT histograms, in-flight requests, outcomes, tokens
+- [x] Client disconnect cancels the upstream request
+- [x] Chat UI: streaming markdown/code/LaTeX, thinking mode, live per-reply metrics
+- [x] Arena: race two backends on one prompt, with fair (sequential) timing
+- [ ] Fallback to another engine when a backend is down
 - [ ] Admission control: bounded queue and per-key concurrency limits (429s, not timeouts)
-- [ ] Prometheus metrics (TTFT and TPOT histograms, queue depth) and OpenTelemetry traces
+- [ ] OpenTelemetry traces
 - [ ] Measure gateway overhead with `llm-bench` (target: < 2 ms added TTFT)
 
 ## Phase 3: Agent harness
