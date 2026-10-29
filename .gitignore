@@ -23,3 +23,7 @@ models/
 .DS_Store
 .idea/
 .vscode/
+
+# UI
+node_modules/
+ui/dist/

@@ -21,7 +21,7 @@ repos:
         types: [python]
       - id: mypy
         name: mypy
-        entry: uv run mypy packages/llm-bench/src
+        entry: uv run mypy packages/llm-bench/src services/gateway/src
         language: system
         types: [python]
         pass_filenames: false

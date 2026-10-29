@@ -28,11 +28,29 @@ jobs:
       - name: Ruff lint
         run: uv run ruff check --output-format=github .
       - name: Mypy (strict)
-        run: uv run mypy packages/llm-bench/src
+        run: uv run mypy packages/llm-bench/src services/gateway/src
       - name: Pytest
         run: uv run pytest
       - name: Shellcheck
         run: shellcheck inference/scripts/*.sh
+
+  ui:
+    name: Chat UI (typecheck, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
 
   e2e:
     name: End-to-end against a real llama.cpp server

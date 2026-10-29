@@ -8,8 +8,9 @@ help: ## Show this help
 ## ---- development ----
 
 .PHONY: install
-install: ## Install the workspace and git hooks
+install: ## Install the workspace, UI dependencies and git hooks
 	uv sync
+	cd ui && npm ci
 	uv run pre-commit install
 
 .PHONY: format
@@ -18,11 +19,12 @@ format: ## Auto-format and auto-fix lint issues
 	uv run ruff check --fix .
 
 .PHONY: check
-check: ## Run everything CI runs (format, lint, types, tests)
+check: ## Run everything CI runs (format, lint, types, tests, UI)
 	uv run ruff format --check .
 	uv run ruff check .
-	uv run mypy packages/llm-bench/src
+	uv run mypy packages/llm-bench/src services/gateway/src
 	uv run pytest
+	cd ui && npm run typecheck && npm test
 
 .PHONY: test
 test: ## Run the test suite
@@ -45,6 +47,27 @@ serve-ollama: ## Run Ollama on :11434
 .PHONY: probe
 probe: ## Show which engines are up
 	uv run llm-bench probe
+
+## ---- gateway & chat UI ----
+
+ui/node_modules: ui/package-lock.json
+	cd ui && npm ci
+	@touch $@
+
+ui/dist: ui/node_modules $(shell find ui/src -type f) ui/index.html
+	cd ui && npm run build
+	@touch $@
+
+.PHONY: ui
+ui: ui/dist ## Build the chat UI
+
+.PHONY: gateway
+gateway: ui/dist ## Serve the gateway API + chat UI on http://127.0.0.1:8000
+	uv run llm-gateway
+
+.PHONY: dev-ui
+dev-ui: ui/node_modules ## Chat UI with hot reload on :5173 (needs `make gateway`)
+	cd ui && npm run dev
 
 .PHONY: bench
 bench: ## Benchmark all engines, one at a time, and write a combined report
