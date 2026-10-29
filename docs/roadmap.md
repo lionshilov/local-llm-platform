@@ -21,8 +21,9 @@ Each phase ships something that runs, is tested in CI, and has numbers behind it
 - [x] Client disconnect cancels the upstream request
 - [x] Chat UI: streaming markdown/code/LaTeX, thinking mode, live per-reply metrics
 - [x] Arena: race two backends on one prompt, with fair (sequential) timing
-- [ ] Fallback to another engine when a backend is down
-- [ ] Admission control: bounded queue and per-key concurrency limits (429s, not timeouts)
+- [x] Fallback to another engine when a backend is down, full or failing
+- [x] Admission control: per-backend concurrency limits with a bounded queue (429s, not timeouts)
+- [ ] Per-API-key limits and a shared limiter for multiple gateway replicas
 - [ ] OpenTelemetry traces
 - [ ] Measure gateway overhead with `llm-bench` (target: < 2 ms added TTFT)
 

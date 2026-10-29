@@ -86,8 +86,8 @@ More findings, each one a production pitfall with the fix applied here:
 | 🔜 | Deploy | Docker Compose with Prometheus, Grafana dashboards and alerts |
 | 🔜 | RAG | Local embeddings, vector search, reranking |
 
-Architecture and design decisions: [docs/architecture.md](docs/architecture.md) ·
-roadmap: [docs/roadmap.md](docs/roadmap.md).
+Architecture: [docs/architecture.md](docs/architecture.md) · design decisions:
+[docs/adr](docs/adr/README.md) · roadmap: [docs/roadmap.md](docs/roadmap.md).
 
 ## Quickstart
 

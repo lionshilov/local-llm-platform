@@ -56,6 +56,8 @@ number in the docs can be reproduced.
 **Config as code.** Engines, scenarios and server flags live in versioned files
 (`configs/`, `inference/scripts/`), not in someone's shell history.
 
+Each of these is recorded with its trade-offs in the [architecture decision records](adr/README.md).
+
 ## Modules
 
 | Path | Status | Responsibility |
