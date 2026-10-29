@@ -1,0 +1,17 @@
+# End-to-end smoke test used by GitHub Actions: a tiny model on llama.cpp's CPU backend.
+# Measures nothing meaningful; proves the whole client -> server -> report path works.
+
+engines:
+  llamacpp:
+    label: llama.cpp CPU (CI)
+    base_url: http://127.0.0.1:8080/v1
+    model: qwen3.5-0.8b
+    extra_body:
+      chat_template_kwargs: {enable_thinking: false}
+
+scenarios:
+  smoke:
+    prompt_words: 30
+    max_tokens: 32
+    concurrency: [1, 2]
+    requests_per_level: 2

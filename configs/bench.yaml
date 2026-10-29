@@ -1,0 +1,53 @@
+# Same model (Qwen3.5-4B, ~4-bit) served four ways on one Mac: two weight formats
+# (GGUF, MLX), each through its reference server and through Ollama.
+# Start servers with `make serve-<engine>`; `make bench` runs them one at a time.
+#
+# Thinking is disabled everywhere so every engine generates the same kind of output;
+# each server exposes that switch differently, hence the per-engine extra_body.
+#
+# Ollama tags are explicit on purpose: on Apple Silicon the bare `qwen3.5:4b` tag
+# resolves to the NVFP4/MLX build, elsewhere to GGUF.
+
+engines:
+  llamacpp:
+    label: llama.cpp · GGUF Q4_K_M
+    base_url: http://127.0.0.1:8080/v1
+    model: qwen3.5-4b
+    extra_body:
+      chat_template_kwargs: {enable_thinking: false}
+
+  ollama-gguf:
+    label: Ollama · GGUF Q4_K_M
+    base_url: http://127.0.0.1:11434/v1
+    model: qwen3.5:4b-q4_K_M
+    extra_body:
+      reasoning_effort: none
+
+  mlx:
+    label: MLX-LM · MLX 4-bit
+    base_url: http://127.0.0.1:8081/v1
+    model: mlx-community/Qwen3.5-4B-MLX-4bit
+    extra_body:
+      chat_template_kwargs: {enable_thinking: false}
+
+  ollama-mlx:
+    label: Ollama · MLX NVFP4
+    base_url: http://127.0.0.1:11434/v1
+    model: qwen3.5:4b-nvfp4
+    extra_body:
+      reasoning_effort: none
+
+scenarios:
+  chat:
+    description: Short prompt, long answer. Decode-bound; shows tokens/s and batching gains.
+    prompt_words: 40
+    max_tokens: 256
+    concurrency: [1, 2, 4]
+    requests_per_level: 8
+
+  long-context:
+    description: ~3.4k-token document, short answer. Prefill-bound; shows prompt processing speed.
+    prompt_words: 3000
+    max_tokens: 64
+    concurrency: [1, 2]
+    requests_per_level: 4
