@@ -1,0 +1,203 @@
+# Recording and alerting rules for the LLM serving stack.
+#
+# SLOs (see deploy/README.md#slos):
+#   availability  99% of chat requests succeed           (error budget: 1%)
+#   TTFT          p95 time to first token <= 2.5 s       (streaming chat)
+#   TPOT          p95 time per output token <= 100 ms    (>= 10 tokens/s per user)
+# Latency thresholds sit on histogram bucket boundaries, so the SLIs are exact.
+#
+# Validate: promtool check rules alerts.yml
+# Test:     promtool test rules alerts.test.yml
+
+groups:
+  # --- SLIs --------------------------------------------------------------------------
+  # A request "fails" when the gateway or the engine broke it: unreachable backend,
+  # broken stream, or a 5xx. Client errors (4xx) and client cancellations don't burn the
+  # error budget. The `or 0 * ...` branch records 0 instead of nothing when a backend has
+  # traffic but no errors.
+  - name: llm-gateway-sli
+    rules:
+      - record: backend:llm_gateway_error_ratio:rate5m
+        expr: |
+          (
+            sum by (backend) (rate(llm_gateway_requests_total{outcome=~"upstream_(error|unavailable|5..)"}[5m]))
+            or 0 * sum by (backend) (rate(llm_gateway_requests_total[5m]))
+          )
+          / sum by (backend) (rate(llm_gateway_requests_total[5m]))
+      - record: backend:llm_gateway_error_ratio:rate30m
+        expr: |
+          (
+            sum by (backend) (rate(llm_gateway_requests_total{outcome=~"upstream_(error|unavailable|5..)"}[30m]))
+            or 0 * sum by (backend) (rate(llm_gateway_requests_total[30m]))
+          )
+          / sum by (backend) (rate(llm_gateway_requests_total[30m]))
+      - record: backend:llm_gateway_error_ratio:rate1h
+        expr: |
+          (
+            sum by (backend) (rate(llm_gateway_requests_total{outcome=~"upstream_(error|unavailable|5..)"}[1h]))
+            or 0 * sum by (backend) (rate(llm_gateway_requests_total[1h]))
+          )
+          / sum by (backend) (rate(llm_gateway_requests_total[1h]))
+      - record: backend:llm_gateway_error_ratio:rate6h
+        expr: |
+          (
+            sum by (backend) (rate(llm_gateway_requests_total{outcome=~"upstream_(error|unavailable|5..)"}[6h]))
+            or 0 * sum by (backend) (rate(llm_gateway_requests_total[6h]))
+          )
+          / sum by (backend) (rate(llm_gateway_requests_total[6h]))
+
+  # --- Availability ------------------------------------------------------------------
+  - name: llm-gateway-availability
+    rules:
+      - alert: LLMGatewayDown
+        expr: up{job="gateway"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          slo: availability
+        annotations:
+          summary: Gateway {{ $labels.instance }} is down
+          description: >-
+            Prometheus cannot scrape the gateway at {{ $labels.instance }}. Every client
+            request is failing.
+          runbook_url: https://github.com/lionshilov/local-llm-platform/blob/main/deploy/README.md#alerts-and-runbooks
+
+      - alert: LLMEngineScrapeDown
+        expr: up{job=~"llamacpp|vllm"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          slo: availability
+        annotations:
+          summary: Inference engine {{ $labels.instance }} ({{ $labels.job }}) is down
+          description: >-
+            Prometheus cannot scrape {{ $labels.job }} at {{ $labels.instance }}. Requests
+            routed to it fail with 502 upstream_unavailable.
+          runbook_url: https://github.com/lionshilov/local-llm-platform/blob/main/deploy/README.md#alerts-and-runbooks
+
+      # Simple, fast signal: a 5% error ratio burns the 1% budget 5x faster than allowed.
+      - alert: LLMGatewayHighErrorRatio
+        expr: backend:llm_gateway_error_ratio:rate5m > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          slo: availability
+        annotations:
+          summary: "{{ $labels.backend }}: {{ $value | humanizePercentage }} of requests failing"
+          description: >-
+            {{ $value | humanizePercentage }} of chat requests to backend
+            {{ $labels.backend }} failed over the last 5 minutes (threshold 5%,
+            SLO 99% success).
+          runbook_url: https://github.com/lionshilov/local-llm-platform/blob/main/deploy/README.md#alerts-and-runbooks
+
+      # Multi-window, multi-burn-rate alerts (Google SRE Workbook, ch. 5). Fast burn: 2% of
+      # a 30-day budget gone in 1 hour. Slow burn: 5% gone in 6 hours. The short window
+      # makes the alert resolve quickly once the errors stop.
+      - alert: LLMGatewayErrorBudgetFastBurn
+        expr: |
+          backend:llm_gateway_error_ratio:rate1h > (14.4 * 0.01)
+          and
+          backend:llm_gateway_error_ratio:rate5m > (14.4 * 0.01)
+        for: 2m
+        labels:
+          severity: critical
+          slo: availability
+        annotations:
+          summary: "{{ $labels.backend }}: error budget burning 14x too fast"
+          description: >-
+            {{ $value | humanizePercentage }} of requests to {{ $labels.backend }} failed
+            over the last hour, over 14.4x the rate the 1% error budget allows. Sustained,
+            that exhausts the 30-day budget in under two days.
+          runbook_url: https://github.com/lionshilov/local-llm-platform/blob/main/deploy/README.md#alerts-and-runbooks
+
+      - alert: LLMGatewayErrorBudgetSlowBurn
+        expr: |
+          backend:llm_gateway_error_ratio:rate6h > (6 * 0.01)
+          and
+          backend:llm_gateway_error_ratio:rate30m > (6 * 0.01)
+        for: 15m
+        labels:
+          severity: warning
+          slo: availability
+        annotations:
+          summary: "{{ $labels.backend }}: error budget burning 6x too fast"
+          description: >-
+            {{ $value | humanizePercentage }} of requests to {{ $labels.backend }} failed
+            over the last 6 hours, over 6x the rate the 1% error budget allows. Sustained,
+            that exhausts the 30-day budget in under five days.
+          runbook_url: https://github.com/lionshilov/local-llm-platform/blob/main/deploy/README.md#alerts-and-runbooks
+
+  # --- Latency -----------------------------------------------------------------------
+  - name: llm-gateway-latency
+    rules:
+      - alert: LLMGatewayTTFTHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum by (backend, le) (rate(llm_gateway_time_to_first_token_seconds_bucket[5m]))
+          ) > 2.5
+        for: 10m
+        labels:
+          severity: warning
+          slo: latency
+        annotations:
+          summary: "{{ $labels.backend }}: TTFT p95 {{ $value | humanizeDuration }} (SLO 2.5s)"
+          description: >-
+            95th percentile time to first token for {{ $labels.backend }} has been above
+            the 2.5 s SLO for 10 minutes (now {{ $value | humanizeDuration }}). Usually
+            prefill queueing: long prompts or all engine slots busy.
+          runbook_url: https://github.com/lionshilov/local-llm-platform/blob/main/deploy/README.md#alerts-and-runbooks
+
+      - alert: LLMGatewayTPOTHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum by (backend, le) (rate(llm_gateway_time_per_output_token_seconds_bucket[5m]))
+          ) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          slo: latency
+        annotations:
+          summary: "{{ $labels.backend }}: TPOT p95 {{ $value | humanizeDuration }} (SLO 100ms)"
+          description: >-
+            The slowest 5% of streams on {{ $labels.backend }} generate fewer than 10 tokens/s
+            per user (TPOT p95 {{ $value | humanizeDuration }}). The decode batch is too
+            large for the hardware, or the GPU is shared with something else.
+          runbook_url: https://github.com/lionshilov/local-llm-platform/blob/main/deploy/README.md#alerts-and-runbooks
+
+  # --- Saturation --------------------------------------------------------------------
+  - name: llm-saturation
+    rules:
+      # requests_deferred is an instantaneous gauge; max_over_time catches queues that
+      # form and drain between scrapes. Five minutes of it means sustained overload.
+      - alert: LlamaCppRequestsQueueing
+        expr: max_over_time(llamacpp:requests_deferred[1m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          slo: latency
+        annotations:
+          summary: llama.cpp at {{ $labels.instance }} is queueing requests
+          description: >-
+            All decode slots on {{ $labels.instance }} have been busy for 5 minutes and up
+            to {{ $value }} request(s) wait for a free slot. Their TTFT grows with every
+            queued request. Add slots (--parallel) or replicas, or shed load at the gateway.
+          runbook_url: https://github.com/lionshilov/local-llm-platform/blob/main/deploy/README.md#alerts-and-runbooks
+
+      # A stream holds the in-flight gauge until it ends. In-flight requests with no
+      # completed request for 15 minutes means a hung upstream or a leaked gauge.
+      - alert: LLMGatewayRequestsStuck
+        expr: |
+          sum by (backend) (llm_gateway_in_flight_requests) > 0
+          unless on (backend)
+          sum by (backend) (increase(llm_gateway_requests_total[15m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+          slo: availability
+        annotations:
+          summary: "{{ $labels.backend }}: {{ $value }} request(s) in flight, none completed in 15m"
+          description: >-
+            {{ $value }} streaming request(s) to {{ $labels.backend }} are in flight but no
+            request has completed for 15 minutes. The engine is hung or a stream never
+            closed.
+          runbook_url: https://github.com/lionshilov/local-llm-platform/blob/main/deploy/README.md#alerts-and-runbooks

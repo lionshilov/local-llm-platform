@@ -1,0 +1,36 @@
+# Keep the build context small and free of local state. Images build from sources and
+# lockfiles only; everything below is either rebuilt inside the image or never needed.
+
+# VCS and editor state
+.git
+.github
+.idea
+.vscode
+**/.DS_Store
+
+# Python environments and caches
+.venv
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+
+# Node: dependencies and build output are recreated by `npm ci && npm run build`
+**/node_modules
+ui/dist
+
+# Model weights and benchmark output
+models
+**/*.gguf
+**/*.safetensors
+**/*.bin
+benchmarks
+results
+
+# Secrets and logs
+**/.env
+**/*.log

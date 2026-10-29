@@ -1,0 +1,30 @@
+# Gateway config for the containerized gateway (deploy/compose.yaml).
+# Same backends as configs/gateway.yaml, but the engines run natively on the host
+# (Docker on macOS has no GPU), so the container reaches them via host.docker.internal.
+
+default_backend: llamacpp
+
+backends:
+  llamacpp:
+    label: Qwen3.5 4B · llama.cpp
+    engine: llamacpp
+    base_url: http://host.docker.internal:8080/v1
+    model: qwen3.5-4b
+
+  mlx:
+    label: Qwen3.5 4B · MLX-LM
+    engine: mlx
+    base_url: http://host.docker.internal:8081/v1
+    model: mlx-community/Qwen3.5-4B-MLX-4bit
+
+  ollama-gguf:
+    label: Qwen3.5 4B · Ollama GGUF
+    engine: ollama
+    base_url: http://host.docker.internal:11434/v1
+    model: qwen3.5:4b-q4_K_M
+
+  ollama-mlx:
+    label: Qwen3.5 4B · Ollama MLX
+    engine: ollama
+    base_url: http://host.docker.internal:11434/v1
+    model: qwen3.5:4b-nvfp4

@@ -1,0 +1,15 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus          # dashboards reference this uid
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 5s       # = scrape interval, so $__rate_interval is never too short
+      httpMethod: POST
+      prometheusType: Prometheus
+      prometheusVersion: 3.15.1

@@ -1,0 +1,31 @@
+# Prometheus for the local stack: the containerized gateway plus the inference engine
+# running natively on the host (reached via host.docker.internal).
+
+global:
+  scrape_interval: 5s      # LLM requests last seconds; 5s keeps rate() windows short
+  scrape_timeout: 4s
+  evaluation_interval: 15s
+
+rule_files:
+  - alerts.yml             # relative to this file
+
+scrape_configs:
+  - job_name: gateway
+    static_configs:
+      - targets: ["gateway:8000"]
+        labels:
+          service: llm-gateway
+
+  # llama.cpp started with --metrics (inference/scripts/serve-llamacpp.sh).
+  # Note: its *_tokens_seconds gauges are reset by every /metrics read, so dashboards
+  # derive throughput from the *_total counters instead.
+  - job_name: llamacpp
+    static_configs:
+      - targets: ["host.docker.internal:8080"]
+        labels:
+          engine: llamacpp
+          model: qwen3.5-4b
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
