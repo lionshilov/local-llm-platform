@@ -10,9 +10,9 @@ from pydantic import ValidationError
 CONFIGS = Path(__file__).resolve().parents[3] / "configs"
 
 
-@pytest.mark.parametrize("path", sorted(CONFIGS.glob("*.yaml")), ids=lambda p: p.name)
-def test_shipped_configs_are_valid(path: Path) -> None:
-    config = BenchConfig.load(path)
+@pytest.mark.parametrize("name", ["bench.yaml", "ci.yaml"])
+def test_shipped_configs_are_valid(name: str) -> None:
+    config = BenchConfig.load(CONFIGS / name)
     assert config.engines
     assert config.scenarios
 

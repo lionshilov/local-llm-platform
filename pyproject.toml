@@ -12,14 +12,16 @@ dependencies = []
 package = false
 
 [tool.uv.workspace]
-members = ["packages/*"]
+members = ["packages/*", "services/*"]
 
 [tool.uv.sources]
 llm-bench = { workspace = true }
+llm-gateway = { workspace = true }
 
 [dependency-groups]
 dev = [
     "llm-bench",
+    "llm-gateway",
     "mypy>=1.13",
     "pre-commit>=4.0",
     "pytest>=8.3",
@@ -39,10 +41,10 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "ASYNC", "PT", "C4", "PTH
 python_version = "3.12"
 strict = true
 warn_unreachable = true
-mypy_path = ["packages/llm-bench/src"]
+mypy_path = ["packages/llm-bench/src", "services/gateway/src"]
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib -ra"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-testpaths = ["packages"]
+testpaths = ["packages", "services"]

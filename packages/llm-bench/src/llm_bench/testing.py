@@ -47,11 +47,32 @@ class FakeServer:
         if request.method == "GET" and request.url.path == "/v1/models":
             return httpx.Response(200, json={"data": [{"id": self.model_id}]})
         if request.method == "POST" and request.url.path == "/v1/chat/completions":
-            self.requests.append(json.loads(request.content))
+            body = json.loads(request.content)
+            self.requests.append(body)
+            if not body.get("stream"):
+                return httpx.Response(200, json=self._completion())
             return httpx.Response(
                 200, headers={"content-type": "text/event-stream"}, content=self._stream()
             )
         return httpx.Response(404, json={"error": "not found"})
 
+    def _completion(self) -> dict[str, Any]:
+        text = "".join(f"tok{i} " for i in range(self.tokens))
+        return {
+            "object": "chat.completion",
+            "model": self.model_id,
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", self.text_field: text},
+                    "finish_reason": "length",
+                }
+            ],
+            "usage": {"prompt_tokens": self.prompt_tokens, "completion_tokens": self.tokens},
+        }
+
+    def transport(self) -> httpx.MockTransport:
+        return httpx.MockTransport(self.handler)
+
     def client(self) -> httpx.AsyncClient:
-        return httpx.AsyncClient(transport=httpx.MockTransport(self.handler))
+        return httpx.AsyncClient(transport=self.transport())
