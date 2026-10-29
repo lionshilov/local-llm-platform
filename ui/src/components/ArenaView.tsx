@@ -39,9 +39,7 @@ function Verdict({
         {icon}
         {name}
       </span>
-      <span className={aWins ? "text-emerald-300" : "text-zinc-400"}>
-        A {fmt(a)}
-      </span>
+      <span className={aWins ? "text-emerald-300" : "text-zinc-400"}>A {fmt(a)}</span>
       <span className="text-zinc-600">vs</span>
       <span className={aWins ? "text-zinc-400" : "text-emerald-300"}>
         B {fmt(b)} {unit}
@@ -84,7 +82,9 @@ export function ArenaView({
     });
   }, [models, columns, setModel]);
 
-  const lengths = arena.columns.map((c) => `${c.messages.length}:${c.messages.at(-1)?.content.length}`);
+  const lengths = arena.columns.map(
+    (c) => `${c.messages.length}:${c.messages.at(-1)?.content.length}`,
+  );
   useEffect(() => {
     for (const el of scrollRefs.current) if (el) el.scrollTop = el.scrollHeight;
   }, [lengths.join("|")]);

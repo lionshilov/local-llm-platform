@@ -1,4 +1,12 @@
-import { AlertTriangle, CornerDownRight, Gauge, RotateCcw, Sparkles, Timer, Zap } from "lucide-react";
+import {
+  AlertTriangle,
+  CornerDownRight,
+  Gauge,
+  RotateCcw,
+  Sparkles,
+  Timer,
+  Zap,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import type { ChatMessage } from "../lib/types";
 import { CopyButton } from "./CopyButton";
@@ -53,7 +61,9 @@ function StatsBar({
           {s.promptTokens ?? "?"} → {s.completionTokens} tok
         </Stat>
       )}
-      {s?.finishReason === "length" && <span className="text-amber-400/80">max tokens reached</span>}
+      {s?.finishReason === "length" && (
+        <span className="text-amber-400/80">max tokens reached</span>
+      )}
       {message.status === "stopped" && <span className="text-zinc-400">stopped</span>}
     </div>
   );
@@ -107,9 +117,7 @@ export function MessageView({
             <span className="typing-dot [animation-delay:300ms]" />
           </div>
         ) : (
-          message.content && (
-            <LazyMarkdown text={message.content} streaming={streaming} />
-          )
+          message.content && <LazyMarkdown text={message.content} streaming={streaming} />
         )}
 
         {message.status === "error" && (

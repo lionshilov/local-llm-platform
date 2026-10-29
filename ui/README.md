@@ -33,11 +33,11 @@ remark-gfm/remark-math, rehype-highlight and rehype-katex. Markdown, KaTeX and
 highlight.js are lazy-loaded with the first reply, so the initial bundle stays at ~80 kB
 gzipped.
 
-| Path | Responsibility |
-|---|---|
-| `src/lib/api.ts` | Streaming client for `/v1/chat/completions`, timing per chunk |
-| `src/lib/sse.ts` | Incremental SSE parser and latency math |
-| `src/lib/reply.ts` | One assistant reply: request building, frame-batched updates, stop/error handling |
-| `src/lib/math.ts` | LaTeX delimiter normalization and price escaping |
-| `src/hooks/useChat.ts` | Conversations, persistence, send/stop/regenerate |
-| `src/hooks/useArena.ts` | Two-backend races, parallel or fair timing |
+| Path                    | Responsibility                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| `src/lib/api.ts`        | Streaming client for `/v1/chat/completions`, timing per chunk                     |
+| `src/lib/sse.ts`        | Incremental SSE parser and latency math                                           |
+| `src/lib/reply.ts`      | One assistant reply: request building, frame-batched updates, stop/error handling |
+| `src/lib/math.ts`       | LaTeX delimiter normalization and price escaping                                  |
+| `src/hooks/useChat.ts`  | Conversations, persistence, send/stop/regenerate                                  |
+| `src/hooks/useArena.ts` | Two-backend races, parallel or fair timing                                        |

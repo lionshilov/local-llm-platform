@@ -27,7 +27,10 @@ export function useArena(settings: Settings) {
       all.map((c, i) =>
         i !== column
           ? c
-          : { ...c, messages: c.messages.map((m) => (m.id === messageId ? { ...m, ...update } : m)) },
+          : {
+              ...c,
+              messages: c.messages.map((m) => (m.id === messageId ? { ...m, ...update } : m)),
+            },
       ),
     );
   }, []);
@@ -51,7 +54,12 @@ export function useArena(settings: Settings) {
           model: column.model ?? undefined,
           status: "streaming",
         };
-        return { index, model: column.model as string, history: [...column.messages, user], reply };
+        return {
+          index,
+          model: column.model as string,
+          history: [...column.messages, user],
+          reply,
+        };
       });
       setColumns((all) =>
         all.map((c, i) => {

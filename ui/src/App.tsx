@@ -115,8 +115,8 @@ export default function App() {
             </>
           )}
           {mode === "chat" && <ModelPicker models={models} value={model} onChange={setModel} />}
-          <div className="flex-1" />
-          <div className="mr-1 flex rounded-xl border border-white/10 p-0.5 text-sm">
+          <div className="min-w-2 flex-1" />
+          <div className="mr-1 flex shrink-0 rounded-xl border border-white/10 p-0.5 text-sm">
             {(
               [
                 ["chat", "Chat", MessagesSquare],
@@ -128,12 +128,14 @@ export default function App() {
                 key={value}
                 onClick={() => setMode(value)}
                 aria-pressed={mode === value}
+                aria-label={label}
+                title={label}
                 className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
                   mode === value ? "bg-white/10 text-zinc-100" : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
                 <Icon className="size-4" />
-                {label}
+                <span className="hidden sm:inline">{label}</span>
               </button>
             ))}
           </div>

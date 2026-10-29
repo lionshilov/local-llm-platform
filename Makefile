@@ -17,6 +17,7 @@ install: ## Install the workspace, UI dependencies and git hooks
 format: ## Auto-format and auto-fix lint issues
 	uv run ruff format .
 	uv run ruff check --fix .
+	cd ui && npm run format
 
 .PHONY: check
 check: ## Run everything CI runs (format, lint, types, tests, UI)
@@ -24,7 +25,7 @@ check: ## Run everything CI runs (format, lint, types, tests, UI)
 	uv run ruff check .
 	uv run mypy packages/llm-bench/src services/gateway/src
 	uv run pytest
-	cd ui && npm run typecheck && npm test
+	cd ui && npm run format:check && npm run typecheck && npm test
 
 .PHONY: test
 test: ## Run the test suite

@@ -5,7 +5,7 @@ describe("createSseParser", () => {
   it("returns complete data payloads and buffers partial lines", () => {
     const parser = createSseParser();
     expect(parser.push(': keep-alive\n\ndata: {"a":')).toEqual([]);
-    expect(parser.push('1}\n\nevent: x\ndata: [DONE]\n')).toEqual(['{"a":1}', "[DONE]"]);
+    expect(parser.push("1}\n\nevent: x\ndata: [DONE]\n")).toEqual(['{"a":1}', "[DONE]"]);
   });
 
   it("handles CRLF line endings and missing space after the colon", () => {

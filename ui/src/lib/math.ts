@@ -65,7 +65,6 @@ function transformProse(text: string): string {
     .join("");
 }
 
-
 export function preprocessMath(markdown: string): string {
   return markdown
     .split(CODE)

@@ -74,7 +74,7 @@ function Markdown({
   variant?: keyof typeof STYLES;
 }) {
   return (
-    <div className={`${streaming ? "is-streaming " : ""}${STYLES[variant]}`}>
+    <div className={`${streaming ? "is-streaming" : ""}${STYLES[variant]}`}>
       <ReactMarkdown
         remarkPlugins={remarkPlugins}
         rehypePlugins={rehypePlugins}

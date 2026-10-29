@@ -50,19 +50,22 @@ export function ModelPicker({
   }, [open]);
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative min-w-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-xl px-3 py-2 text-[15px] font-medium text-zinc-100 transition hover:bg-white/5"
+        className="flex max-w-full items-center gap-2 rounded-xl px-3 py-2 text-[15px] font-medium whitespace-nowrap text-zinc-100 transition hover:bg-white/5"
       >
-        {current ? <StatusDot up={current.available} /> : <Cpu className="size-4" />}
-        <span>{current?.label ?? "Select a model"}</span>
-        <ChevronDown className="size-4 text-zinc-500" />
+        {current ? <StatusDot up={current.available} /> : <Cpu className="size-4 shrink-0" />}
+        <span className="truncate sm:hidden">
+          {current?.label.split("·").pop()?.trim() ?? "Model"}
+        </span>
+        <span className="hidden truncate sm:inline">{current?.label ?? "Select a model"}</span>
+        <ChevronDown className="size-4 shrink-0 text-zinc-500" />
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 z-30 mt-2 w-80 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 p-1.5 shadow-2xl shadow-black/50 backdrop-blur">
+        <div className="absolute top-full left-0 z-30 mt-2 w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 p-1.5 shadow-2xl shadow-black/50 backdrop-blur">
           <div className="px-3 pt-2 pb-1 text-xs font-medium tracking-wide text-zinc-500 uppercase">
             Local backends
           </div>

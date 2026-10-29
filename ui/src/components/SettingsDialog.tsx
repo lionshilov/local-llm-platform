@@ -84,7 +84,10 @@ export function SettingsDialog({
           step={256}
           value={settings.maxTokens}
           onChange={(e) =>
-            onChange({ ...settings, maxTokens: Math.max(16, Number(e.target.value) || 16) })
+            onChange({
+              ...settings,
+              maxTokens: Math.max(16, Number(e.target.value) || 16),
+            })
           }
           className="mt-2 w-40 rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 focus:border-violet-400/50 focus:outline-none"
         />
