@@ -37,6 +37,7 @@ interface Delta {
 }
 
 interface Chunk {
+  model?: string;
   choices?: { delta?: Delta; finish_reason?: string | null }[];
   usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
   error?: { message?: string };
@@ -72,6 +73,7 @@ export async function streamChat(
     completionTokens: null,
     promptTokens: null,
     finishReason: null,
+    servedBy: null,
   };
 
   const response = await fetch("/v1/chat/completions", {
@@ -93,6 +95,7 @@ export async function streamChat(
       if (data === "[DONE]") continue;
       const chunk = JSON.parse(data) as Chunk;
       if (chunk.error) throw new Error(chunk.error.message ?? "Upstream error");
+      timing.servedBy ??= chunk.model ?? null;
       const now = performance.now();
       for (const choice of chunk.choices ?? []) {
         const { content, reasoning_content: reasoning } = choice.delta ?? {};

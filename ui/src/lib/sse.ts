@@ -29,6 +29,7 @@ export interface StreamTiming {
   completionTokens: number | null;
   promptTokens: number | null;
   finishReason: string | null;
+  servedBy: string | null;
 }
 
 /** Same definitions as llm-bench: TTFT, decode speed after the first token, thinking time. */
@@ -52,5 +53,6 @@ export function computeStats(t: StreamTiming) {
     promptTokens: t.promptTokens,
     durationMs: t.endedAt - t.startedAt,
     finishReason: t.finishReason,
+    servedBy: t.servedBy,
   };
 }

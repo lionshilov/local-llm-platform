@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import json
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -14,8 +16,10 @@ import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.background import BackgroundTask
 
 from llm_gateway import __version__
+from llm_gateway.admission import Admission, Slot
 from llm_gateway.config import Backend, GatewayConfig
 from llm_gateway.metrics import GatewayMetrics
 from llm_gateway.normalize import apply_reasoning_effort, has_generated_text, normalize_payload
@@ -23,9 +27,24 @@ from llm_gateway.normalize import apply_reasoning_effort, has_generated_text, no
 Json = dict[str, Any]
 
 
-def _error(status: int, message: str, kind: str) -> JSONResponse:
+@dataclass
+class _Retryable:
+    """A failure that happened before any token was sent, so a fallback may take over."""
+
+    response: Response
+
+
+def _error(
+    status: int, message: str, kind: str, headers: dict[str, str] | None = None
+) -> JSONResponse:
     """OpenAI-style error body, so SDK clients surface the message properly."""
-    return JSONResponse({"error": {"message": message, "type": kind}}, status_code=status)
+    return JSONResponse(
+        {"error": {"message": message, "type": kind}}, status_code=status, headers=headers
+    )
+
+
+def _waiting(admission: Admission) -> float:
+    return admission.waiting
 
 
 def _sse(payload: Json) -> bytes:
@@ -41,6 +60,14 @@ class Gateway:
         self.config = config
         self.client = client
         self.metrics = GatewayMetrics()
+        self.admissions = {
+            name: Admission(b.max_concurrency, b.max_queue, b.queue_timeout_s)
+            for name, b in config.backends.items()
+        }
+        for name, admission in self.admissions.items():
+            self.metrics.queue_depth.labels(name).set_function(
+                functools.partial(_waiting, admission)
+            )
 
     async def is_available(self, backend: Backend) -> bool:
         try:
@@ -79,48 +106,91 @@ class Gateway:
             known = ", ".join(self.config.backends)
             return _error(404, f"model '{model_id}' not found; available: {known}", "not_found")
 
-        upstream_body = apply_reasoning_effort({**body, "model": backend.model}, backend.engine)
-        request = self.client.build_request(
-            "POST",
-            f"{backend.base_url}/chat/completions",
-            json=upstream_body,
-            headers=_auth_headers(backend),
-        )
+        # Try the requested backend, then its fallbacks. Only failures that happen before
+        # any token is sent are retried, so a client never sees two half-answers.
+        failure: Response | None = None
+        for name in [model_id, *backend.fallbacks]:
+            if failure is not None:
+                self.metrics.fallbacks.labels(model_id, name).inc()
+            result = await self._try_backend(name, body, started)
+            if not isinstance(result, _Retryable):
+                return result
+            failure = result.response
+        assert failure is not None
+        return failure
+
+    async def _try_backend(self, name: str, body: Json, started: float) -> Response | _Retryable:
+        backend = self.config.backends[name]
+        slot = await self.admissions[name].acquire()
+        if slot is None:
+            self.metrics.requests.labels(name, "rejected").inc()
+            return _Retryable(
+                _error(
+                    429,
+                    f"backend '{name}' is at capacity, retry shortly",
+                    "rate_limited",
+                    headers={"Retry-After": "1", "X-Backend": name},
+                )
+            )
+
+        streaming_started = False
         try:
-            upstream = await self.client.send(request, stream=True)
-        except httpx.HTTPError as exc:
-            self.metrics.requests.labels(model_id, "upstream_unavailable").inc()
-            return _error(
-                502, f"backend '{model_id}' is unreachable: {exc}", "upstream_unavailable"
+            upstream_body = apply_reasoning_effort({**body, "model": backend.model}, backend.engine)
+            request = self.client.build_request(
+                "POST",
+                f"{backend.base_url}/chat/completions",
+                json=upstream_body,
+                headers=_auth_headers(backend),
             )
-
-        if upstream.status_code != httpx.codes.OK:
-            content = await upstream.aread()
-            await upstream.aclose()
-            self.metrics.requests.labels(model_id, f"upstream_{upstream.status_code}").inc()
-            return Response(
-                content,
-                status_code=upstream.status_code,
-                media_type=upstream.headers.get("content-type"),
-            )
-
-        if not body.get("stream"):
             try:
-                payload = json.loads(await upstream.aread())
-            finally:
-                await upstream.aclose()
-            self._record_usage(model_id, payload.get("usage"))
-            self.metrics.requests.labels(model_id, "ok").inc()
-            return JSONResponse(normalize_payload(payload, model_id))
+                upstream = await self.client.send(request, stream=True)
+            except httpx.HTTPError as exc:
+                self.metrics.requests.labels(name, "upstream_unavailable").inc()
+                return _Retryable(
+                    _error(
+                        502,
+                        f"backend '{name}' is unreachable: {exc}",
+                        "upstream_unavailable",
+                        headers={"X-Backend": name},
+                    )
+                )
 
-        return StreamingResponse(
-            self._relay(upstream, model_id, started),
-            media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-        )
+            if upstream.status_code != httpx.codes.OK:
+                content = await upstream.aread()
+                await upstream.aclose()
+                self.metrics.requests.labels(name, f"upstream_{upstream.status_code}").inc()
+                response = Response(
+                    content,
+                    status_code=upstream.status_code,
+                    media_type=upstream.headers.get("content-type"),
+                    headers={"X-Backend": name},
+                )
+                return _Retryable(response) if upstream.status_code >= 500 else response
+
+            if not body.get("stream"):
+                try:
+                    payload = json.loads(await upstream.aread())
+                finally:
+                    await upstream.aclose()
+                self._record_usage(name, payload.get("usage"))
+                self.metrics.requests.labels(name, "ok").inc()
+                return JSONResponse(normalize_payload(payload, name), headers={"X-Backend": name})
+
+            streaming_started = True
+            return StreamingResponse(
+                self._relay(upstream, name, started, slot),
+                media_type="text/event-stream",
+                headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "X-Backend": name},
+                # Also release here: if the client disconnects before the first chunk, the
+                # generator never starts and its finally block never runs.
+                background=BackgroundTask(slot.release),
+            )
+        finally:
+            if not streaming_started:
+                slot.release()
 
     async def _relay(
-        self, upstream: httpx.Response, model_id: str, started: float
+        self, upstream: httpx.Response, model_id: str, started: float, slot: Slot
     ) -> AsyncIterator[bytes]:
         """Re-emit upstream SSE chunks in the gateway's format while timing them.
 
@@ -155,6 +225,7 @@ class Gateway:
             outcome = "cancelled"
             raise
         finally:
+            slot.release()
             await upstream.aclose()
             self.metrics.in_flight.labels(model_id).dec()
             self.metrics.requests.labels(model_id, outcome).inc()

@@ -24,6 +24,7 @@ describe("computeStats", () => {
     completionTokens: 101,
     promptTokens: 20,
     finishReason: "stop",
+    servedBy: "llamacpp",
   };
 
   it("computes TTFT and decode speed like llm-bench", () => {

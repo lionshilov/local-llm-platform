@@ -27,6 +27,15 @@ class Backend(BaseModel):
     base_url: str = Field(description="Upstream base URL including /v1.")
     model: str = Field(description="Model id the upstream server expects.")
     api_key_env: str | None = None
+    max_concurrency: int | None = Field(
+        default=None, ge=1, description="Requests admitted at once; None means unlimited."
+    )
+    max_queue: int = Field(default=0, ge=0, description="Requests allowed to wait for a slot.")
+    queue_timeout_s: float = Field(default=30.0, gt=0, description="Longest wait for a slot.")
+    fallbacks: list[str] = Field(
+        default_factory=list,
+        description="Backends to try, in order, if this one is unreachable, full or failing.",
+    )
 
     @field_validator("base_url")
     @classmethod
@@ -45,11 +54,15 @@ class GatewayConfig(BaseModel):
     default_backend: str | None = None
 
     @model_validator(mode="after")
-    def _default_exists(self) -> GatewayConfig:
+    def _references_exist(self) -> GatewayConfig:
         if self.default_backend is not None and self.default_backend not in self.backends:
             raise ValueError(
                 f"default_backend '{self.default_backend}' is not a configured backend"
             )
+        for name, backend in self.backends.items():
+            for fallback in backend.fallbacks:
+                if fallback == name or fallback not in self.backends:
+                    raise ValueError(f"backend '{name}' has an invalid fallback '{fallback}'")
         return self
 
     @classmethod

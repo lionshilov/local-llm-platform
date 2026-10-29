@@ -180,6 +180,7 @@ export default function App() {
                   key={message.id}
                   message={message}
                   modelLabel={labelFor(message.model)}
+                  labelFor={labelFor}
                   canRegenerate={index === messages.length - 1 && !chat.streaming && online}
                   onRegenerate={() => model && chat.regenerate(model)}
                 />

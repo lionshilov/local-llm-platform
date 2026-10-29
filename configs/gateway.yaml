@@ -1,5 +1,10 @@
 # Backends the gateway exposes. Clients pick one with `"model": "<name>"`.
 # Start whichever engines you want (`make serve-llamacpp`, ...); the UI shows which are up.
+#
+# Admission limits follow the benchmark (benchmarks/results/20261029-191423):
+#   - llama.cpp and MLX-LM batch 4 requests well, so admit 4 and queue a few more.
+#   - Ollama serves Qwen3.5 one request at a time, so admit 1; extra requests overflow to
+#     llama.cpp, which serves the same GGUF weights, instead of queueing for 20 seconds.
 
 default_backend: llamacpp
 
@@ -9,21 +14,31 @@ backends:
     engine: llamacpp
     base_url: http://127.0.0.1:8080/v1
     model: qwen3.5-4b
+    max_concurrency: 4
+    max_queue: 8
+    fallbacks: [mlx]
 
   mlx:
     label: Qwen3.5 4B · MLX-LM
     engine: mlx
     base_url: http://127.0.0.1:8081/v1
     model: mlx-community/Qwen3.5-4B-MLX-4bit
+    max_concurrency: 4
+    max_queue: 8
+    fallbacks: [llamacpp]
 
   ollama-gguf:
     label: Qwen3.5 4B · Ollama GGUF
     engine: ollama
     base_url: http://127.0.0.1:11434/v1
     model: qwen3.5:4b-q4_K_M
+    max_concurrency: 1
+    fallbacks: [llamacpp]
 
   ollama-mlx:
     label: Qwen3.5 4B · Ollama MLX
     engine: ollama
     base_url: http://127.0.0.1:11434/v1
     model: qwen3.5:4b-nvfp4
+    max_concurrency: 1
+    fallbacks: [mlx]

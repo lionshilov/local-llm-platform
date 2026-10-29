@@ -132,6 +132,7 @@ export function ArenaView({
                       key={message.id}
                       message={message}
                       modelLabel={labelFor(message.model)}
+                      labelFor={labelFor}
                       canRegenerate={false}
                       onRegenerate={() => undefined}
                     />

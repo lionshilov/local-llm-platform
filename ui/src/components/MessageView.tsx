@@ -1,4 +1,4 @@
-import { AlertTriangle, Gauge, RotateCcw, Sparkles, Timer, Zap } from "lucide-react";
+import { AlertTriangle, CornerDownRight, Gauge, RotateCcw, Sparkles, Timer, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ChatMessage } from "../lib/types";
 import { CopyButton } from "./CopyButton";
@@ -14,11 +14,30 @@ function Stat({ icon, children, title }: { icon: ReactNode; children: ReactNode;
   );
 }
 
-function StatsBar({ message, modelLabel }: { message: ChatMessage; modelLabel: string }) {
+function StatsBar({
+  message,
+  modelLabel,
+  labelFor,
+}: {
+  message: ChatMessage;
+  modelLabel: string;
+  labelFor: (id: string) => string;
+}) {
   const s = message.stats;
+  const fellBack = s?.servedBy && message.model && s.servedBy !== message.model;
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-zinc-500">
-      <span className="text-zinc-400">{modelLabel}</span>
+      {fellBack && s?.servedBy ? (
+        <span
+          className="inline-flex items-center gap-1 text-amber-300/90"
+          title={`${modelLabel} was busy or down; the gateway fell back`}
+        >
+          <CornerDownRight className="size-3" />
+          {labelFor(s.servedBy)} (fallback)
+        </span>
+      ) : (
+        <span className="text-zinc-400">{modelLabel}</span>
+      )}
       {s?.ttftMs != null && (
         <Stat icon={<Timer className="size-3" />} title="Time to first token">
           {Math.round(s.ttftMs)} ms
@@ -43,11 +62,13 @@ function StatsBar({ message, modelLabel }: { message: ChatMessage; modelLabel: s
 export function MessageView({
   message,
   modelLabel,
+  labelFor = (id) => id,
   canRegenerate,
   onRegenerate,
 }: {
   message: ChatMessage;
   modelLabel: string;
+  labelFor?: (id: string) => string;
   canRegenerate: boolean;
   onRegenerate: () => void;
 }) {
@@ -114,7 +135,7 @@ export function MessageView({
                 </button>
               )}
             </div>
-            <StatsBar message={message} modelLabel={modelLabel} />
+            <StatsBar message={message} modelLabel={modelLabel} labelFor={labelFor} />
           </div>
         )}
       </div>

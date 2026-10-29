@@ -53,6 +53,18 @@ class GatewayMetrics:
             labels,
             registry=self.registry,
         )
+        self.queue_depth = Gauge(
+            "llm_gateway_queue_depth",
+            "Requests waiting for an admission slot.",
+            labels,
+            registry=self.registry,
+        )
+        self.fallbacks = Counter(
+            "llm_gateway_fallbacks",
+            "Requests re-routed from one backend to another.",
+            ["from_backend", "to_backend"],
+            registry=self.registry,
+        )
         self.output_tokens = Counter(
             "llm_gateway_output_tokens",
             "Completion tokens reported by upstream usage.",

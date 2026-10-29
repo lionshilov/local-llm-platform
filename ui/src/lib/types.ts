@@ -14,6 +14,8 @@ export interface MessageStats {
   thinkingMs: number | null;
   durationMs: number;
   finishReason: string | null;
+  /** Backend that actually answered; differs from the request when the gateway fell back. */
+  servedBy: string | null;
 }
 
 export type MessageStatus = "streaming" | "done" | "stopped" | "error";
