@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, type-check, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Ruff format
+        run: uv run ruff format --check .
+      - name: Ruff lint
+        run: uv run ruff check --output-format=github .
+      - name: Mypy (strict)
+        run: uv run mypy packages/llm-bench/src
+      - name: Pytest
+        run: uv run pytest
+      - name: Shellcheck
+        run: shellcheck inference/scripts/*.sh
+
+  e2e:
+    name: End-to-end against a real llama.cpp server
+    runs-on: ubuntu-latest
+    needs: checks
+    env:
+      MODEL_URL: https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/resolve/main/Qwen3.5-0.8B-Q4_0.gguf
+      MODEL_FILE: models/Qwen3.5-0.8B-Q4_0.gguf
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+
+      - name: Cache model weights
+        uses: actions/cache@v6
+        with:
+          path: models
+          key: gguf-qwen3.5-0.8b-q4_0
+
+      - name: Download model
+        run: |
+          mkdir -p models
+          [ -f "$MODEL_FILE" ] || curl -fsSL --retry 3 -o "$MODEL_FILE" "$MODEL_URL"
+          ls -lh models
+
+      - name: Start llama.cpp server (CPU)
+        run: |
+          docker run -d --name llama -p 8080:8080 -v "$PWD/models:/models:ro" \
+            ghcr.io/ggml-org/llama.cpp:server \
+            -m "/$MODEL_FILE" --alias qwen3.5-0.8b \
+            --host 0.0.0.0 --port 8080 --ctx-size 4096 --parallel 2
+          for _ in $(seq 1 120); do
+            curl -sf http://127.0.0.1:8080/v1/models > /dev/null && exit 0
+            sleep 2
+          done
+          docker logs llama
+          exit 1
+
+      - name: Benchmark
+        run: uv run llm-bench run -c configs/ci.yaml --output-dir results --fail-on-error
+
+      - name: Publish report to job summary
+        if: always()
+        run: |
+          shopt -s nullglob
+          files=(results/*.json)
+          if (( ${#files[@]} )); then
+            uv run llm-bench report "${files[@]}" --format markdown >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Server logs
+        if: failure()
+        run: docker logs llama
