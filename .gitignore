@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Model weights never belong in git
+*.gguf
+*.safetensors
+*.bin
+models/
+
+# Local state
+.env
+*.log
+.DS_Store
+.idea/
+.vscode/
