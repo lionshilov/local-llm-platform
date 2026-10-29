@@ -54,9 +54,10 @@ xychart-beta
    at one user it matches llama.cpp (40.1 vs 39.7 tok/s, 220 vs 215 ms). The cost is in
    scheduling, not in the token path.
 5. **One long prompt stalls everyone else.** With two users sending 3.4k-token prompts,
-   in-flight streams freeze for up to 0.7 s (llama.cpp) and 4.6 s (MLX-LM) while the
-   other prompt is prefilled (ITL p99). This prefill/decode interference is why
-   production servers use chunked prefill and disaggregated serving.
+   in-flight streams freeze while the other prompt is prefilled: ITL p99 of 0.7–4.1 s on
+   llama.cpp (two runs) and 4.6 s on MLX-LM. Both prefill in chunks of up to 2048 tokens
+   and decode waits for each chunk. This prefill/decode interference is why production
+   servers tune chunked prefill and move to disaggregated serving.
 6. **Prefill numbers vary between runs** (llama.cpp: 348 vs 444 tok/s across two full
    runs); decode is stable within ~4%. Treat small prefill differences as noise.
 
@@ -87,7 +88,9 @@ More findings, each one a production pitfall with the fix applied here:
 | 🔜 | RAG | Local embeddings, vector search, reranking |
 
 Architecture: [docs/architecture.md](docs/architecture.md) · design decisions:
-[docs/adr](docs/adr/README.md) · roadmap: [docs/roadmap.md](docs/roadmap.md).
+[docs/adr](docs/adr/README.md) · roadmap: [docs/roadmap.md](docs/roadmap.md) ·
+learning guide that explains every number from first principles:
+[docs/guide.ru.md](docs/guide.ru.md) (in Russian).
 
 ## Quickstart
 
