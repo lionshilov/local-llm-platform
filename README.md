@@ -18,12 +18,12 @@ tool-calling **agent harness** and an **eval harness** written from scratch, and
 measurement code is in the repo.
 
 <p align="center">
-  <img src="docs/assets/arena.gif" alt="Arena mode: llama.cpp and MLX-LM stream answers to the same prompt side by side with live TTFT and tok/s" width="100%">
+  <img src="docs/assets/arena-v2.gif" alt="Arena mode: llama.cpp and MLX-LM stream answers to the same prompt side by side with live TTFT and tok/s" width="100%">
 </p>
 
 | Chat: thinking, LaTeX, live metrics | Arena: race, compare, vote | Monitor: live gateway metrics |
 |---|---|---|
-| ![Chat UI with a reasoning answer, rendered LaTeX and per-reply metrics](docs/assets/chat.png) | ![Arena round with comparison bars, speed ratios, votes and scoreboard](docs/assets/arena.png) | ![Monitor dashboard: throughput, TTFT p95, queueing and fallbacks per backend](docs/assets/monitor.png) |
+| ![Chat UI with a reasoning answer, rendered LaTeX and per-reply metrics](docs/assets/chat-v2.png) | ![Arena round with comparison bars, speed ratios, votes and scoreboard](docs/assets/arena-v2.png) | ![Monitor dashboard: throughput, TTFT p95, queueing and fallbacks per backend](docs/assets/monitor-v2.png) |
 
 The Monitor screenshot was taken under load: llama.cpp hit its admission limit, queued six
 requests and sent two to MLX-LM through the gateway's fallback, all visible live.
