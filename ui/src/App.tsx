@@ -1,7 +1,8 @@
-import { MessagesSquare, PanelLeftOpen, Settings2, SquarePen, Swords, WifiOff } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Download, WifiOff } from "lucide-react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { AppHeader, type Mode } from "./components/AppHeader";
 import { ArenaView } from "./components/ArenaView";
-import { Composer } from "./components/Composer";
+import { Composer, type ComposerHandle } from "./components/Composer";
 import { EmptyState } from "./components/EmptyState";
 import { MessageView } from "./components/MessageView";
 import { ModelPicker } from "./components/ModelPicker";
@@ -9,37 +10,49 @@ import { SettingsDialog } from "./components/SettingsDialog";
 import { Sidebar } from "./components/Sidebar";
 import { useChat } from "./hooks/useChat";
 import { useModels } from "./hooks/useModels";
+import { conversationToMarkdown, downloadText, slugify } from "./lib/export";
 import { loadSettings, saveSettings } from "./lib/storage";
 
-const MODEL_KEY = "llp.model.v1";
+// The dashboard and its Prometheus parsing load only when the Monitor tab opens.
+const MonitorView = lazy(() => import("./components/monitor/MonitorView"));
 
-type Mode = "chat" | "arena";
+const MODEL_KEY = "llp.model.v1";
+const MODE_KEY = "llp.mode.v1";
+
+function isTyping(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+}
 
 export default function App() {
   const [settings, setSettings] = useState(loadSettings);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [mode, setMode] = useState<Mode>("chat");
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
+  const [mode, setMode] = useState<Mode>(
+    () => (localStorage.getItem(MODE_KEY) as Mode | null) ?? "chat",
+  );
   const [model, setModel] = useState<string | null>(() => localStorage.getItem(MODEL_KEY));
-  const { models, defaultModel, error: gatewayError, loaded } = useModels();
+  const gateway = useModels();
+  const { models, defaultModel } = gateway;
   const chat = useChat(settings);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const composer = useRef<ComposerHandle>(null);
   const stickToBottom = useRef(true);
 
   useEffect(() => saveSettings(settings), [settings]);
+  useEffect(() => localStorage.setItem(MODE_KEY, mode), [mode]);
   useEffect(() => {
     if (model) localStorage.setItem(MODEL_KEY, model);
   }, [model]);
 
-  // Pick a sensible model once the list arrives: keep the saved one if it still exists,
-  // otherwise the first one that is online, otherwise the gateway's default.
+  // Keep the saved model if it still exists, else the first online one, else the default.
   useEffect(() => {
     if (models.length === 0 || models.some((m) => m.id === model)) return;
     const online = models.find((m) => m.available);
     setModel(online?.id ?? defaultModel ?? models[0]?.id ?? null);
   }, [models, model, defaultModel]);
 
-  // Follow the stream unless the user scrolled up to read something.
   const messages = chat.active?.messages ?? [];
   const lastContent = messages.at(-1)?.content.length ?? 0;
   const lastReasoning = messages.at(-1)?.reasoning?.length ?? 0;
@@ -48,9 +61,7 @@ export default function App() {
     if (el && stickToBottom.current) el.scrollTop = el.scrollHeight;
   }, [messages.length, lastContent, lastReasoning, chat.activeId]);
 
-  // Content also grows without new tokens: the markdown chunk loading, KaTeX fonts,
-  // code highlighting. Keep pinned to the bottom whenever the content resizes.
-  const contentRef = useRef<HTMLDivElement>(null);
+  // Content also grows without new tokens (lazy markdown chunk, KaTeX fonts, highlighting).
   useEffect(() => {
     const scroller = scrollRef.current;
     const content = contentRef.current;
@@ -60,11 +71,21 @@ export default function App() {
     });
     observer.observe(content);
     return () => observer.disconnect();
-  }, [messages.length > 0]);
+  }, [messages.length > 0, mode]);
 
-  const current = models.find((m) => m.id === model) ?? null;
-  const labelFor = (id?: string) => models.find((m) => m.id === id)?.label ?? id ?? "model";
+  const current = models.find((m) => m.id === model);
+  const labelFor = useCallback(
+    (id?: string) => models.find((m) => m.id === id)?.label ?? id ?? "model",
+    [models],
+  );
   const online = !!current?.available;
+  const toggleThinking = () => setSettings((s) => ({ ...s, thinking: !s.thinking }));
+
+  const newChat = useCallback(() => {
+    setMode("chat");
+    chat.newChat();
+    setTimeout(() => composer.current?.focus(), 0);
+  }, [chat]);
 
   const send = (text: string) => {
     if (!model) return;
@@ -72,29 +93,61 @@ export default function App() {
     chat.send(text, model);
   };
 
+  // ⌘⇧O new chat · Esc stop · / focus the composer
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "o") {
+        e.preventDefault();
+        newChat();
+      } else if (e.key === "Escape" && chat.streaming && mode === "chat") {
+        chat.stop();
+      } else if (e.key === "/" && !isTyping(e.target) && mode === "chat") {
+        e.preventDefault();
+        composer.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [chat, mode, newChat]);
+
+  const exportChat = () => {
+    if (!chat.active) return;
+    downloadText(
+      `${slugify(chat.active.title)}.md`,
+      conversationToMarkdown(chat.active, (id) => labelFor(id)),
+    );
+  };
+
   return (
-    <div className="flex h-dvh overflow-hidden bg-zinc-950 text-zinc-100">
+    <div className="relative flex h-dvh overflow-hidden">
+      <div className="app-backdrop pointer-events-none fixed inset-0" aria-hidden="true" />
+
       {sidebarOpen && (
         <>
           <div
-            className="fixed inset-0 z-30 bg-black/50 md:hidden"
+            className="fixed inset-0 z-30 animate-fade-in bg-black/50 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
           <div className="fixed inset-y-0 left-0 z-40 md:static">
             <Sidebar
               conversations={chat.conversations}
-              activeId={chat.activeId}
+              activeId={mode === "chat" ? chat.activeId : null}
+              models={models}
+              selectedModel={model}
               onSelect={(id) => {
                 setMode("chat");
                 chat.select(id);
                 stickToBottom.current = true;
                 if (window.innerWidth < 768) setSidebarOpen(false);
               }}
-              onNew={() => {
-                setMode("chat");
-                chat.newChat();
-              }}
+              onNew={newChat}
+              onRename={chat.rename}
               onDelete={chat.remove}
+              onSelectModel={(id) => {
+                setModel(id);
+                setMode("chat");
+              }}
+              onOpenMonitor={() => setMode("monitor")}
               onClose={() => setSidebarOpen(false)}
             />
           </div>
@@ -102,81 +155,60 @@ export default function App() {
       )}
 
       <main className="relative flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-1 px-3">
-          {!sidebarOpen && (
-            <>
+        <AppHeader
+          mode={mode}
+          onModeChange={setMode}
+          sidebarOpen={sidebarOpen}
+          onOpenSidebar={() => setSidebarOpen(true)}
+          onNewChat={newChat}
+          onOpenSettings={() => setSettingsOpen(true)}
+          gateway={{
+            status: gateway.status,
+            latencyMs: gateway.latencyMs,
+            online: models.filter((m) => m.available).length,
+            total: models.length,
+            onRetry: gateway.refresh,
+          }}
+          left={
+            mode === "chat" ? (
+              <ModelPicker models={models} value={model} onChange={setModel} />
+            ) : null
+          }
+          right={
+            mode === "chat" && chat.active ? (
               <button
                 type="button"
-                onClick={() => setSidebarOpen(true)}
-                title="Open sidebar"
-                aria-label="Open sidebar"
+                onClick={exportChat}
+                title="Export chat as Markdown"
+                aria-label="Export chat as Markdown"
                 className="rounded-lg p-2 text-zinc-400 transition hover:bg-white/5 hover:text-zinc-100"
               >
-                <PanelLeftOpen className="size-5" />
+                <Download className="size-5" />
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("chat");
-                  chat.newChat();
-                }}
-                title="New chat"
-                aria-label="New chat"
-                className="rounded-lg p-2 text-zinc-400 transition hover:bg-white/5 hover:text-zinc-100"
-              >
-                <SquarePen className="size-5" />
-              </button>
-            </>
-          )}
-          {mode === "chat" && <ModelPicker models={models} value={model} onChange={setModel} />}
-          <div className="min-w-2 flex-1" />
-          <div className="mr-1 flex shrink-0 rounded-xl border border-white/10 p-0.5 text-sm">
-            {(
-              [
-                ["chat", "Chat", MessagesSquare],
-                ["arena", "Arena", Swords],
-              ] as const
-            ).map(([value, label, Icon]) => (
-              <button
-                type="button"
-                key={value}
-                onClick={() => setMode(value)}
-                aria-pressed={mode === value}
-                aria-label={label}
-                title={label}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
-                  mode === value ? "bg-white/10 text-zinc-100" : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Icon className="size-4" />
-                <span className="hidden sm:inline">{label}</span>
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            title="Settings"
-            aria-label="Settings"
-            className="rounded-lg p-2 text-zinc-400 transition hover:bg-white/5 hover:text-zinc-100"
-          >
-            <Settings2 className="size-5" />
-          </button>
-        </header>
+            ) : null
+          }
+        />
 
-        {gatewayError && loaded && (
-          <div className="mx-auto mt-2 flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-1.5 text-sm text-amber-200">
-            <WifiOff className="size-4" />
-            Gateway unreachable: {gatewayError}. Run <code className="font-mono">make gateway</code>
+        {gateway.status === "offline" && (
+          <div className="mx-auto mt-1 mb-2 flex max-w-[calc(100%-2rem)] animate-fade-up items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-4 py-1.5 text-sm text-red-200">
+            <WifiOff className="size-4 shrink-0" />
+            <span className="truncate">
+              Gateway offline. Run <code className="font-mono text-red-100">make gateway</code>;
+              this page reconnects automatically.
+            </span>
+          </div>
+        )}
+
+        {mode === "monitor" && (
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <Suspense fallback={<div className="p-8 text-sm text-zinc-500">Loading metrics…</div>}>
+              <MonitorView models={models} />
+            </Suspense>
           </div>
         )}
 
         <div className={mode === "arena" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
-          <ArenaView
-            models={models}
-            settings={settings}
-            onToggleThinking={() => setSettings((s) => ({ ...s, thinking: !s.thinking }))}
-          />
+          <ArenaView models={models} settings={settings} onToggleThinking={toggleThinking} />
         </div>
 
         <div
@@ -188,17 +220,23 @@ export default function App() {
           className={mode === "chat" ? "flex flex-1 flex-col overflow-y-auto" : "hidden"}
         >
           {messages.length === 0 ? (
-            <EmptyState modelLabel={current?.label ?? null} online={online} onPick={send} />
+            <EmptyState current={current} models={models} onPick={send} onSelectModel={setModel} />
           ) : (
             <div ref={contentRef} className="mx-auto w-full max-w-3xl space-y-8 px-4 pt-6 pb-10">
               {messages.map((message, index) => (
                 <MessageView
                   key={message.id}
                   message={message}
-                  modelLabel={labelFor(message.model)}
+                  model={models.find((m) => m.id === message.model)}
                   labelFor={labelFor}
                   canRegenerate={index === messages.length - 1 && !chat.streaming && online}
                   onRegenerate={() => model && chat.regenerate(model)}
+                  canEdit={!chat.streaming && online}
+                  onEdit={(text) => {
+                    if (!model) return;
+                    stickToBottom.current = true;
+                    chat.editAndResend(message.id, text, model);
+                  }}
                 />
               ))}
             </div>
@@ -207,15 +245,21 @@ export default function App() {
 
         <div className={mode === "chat" ? "mx-auto w-full max-w-3xl px-4 pb-4" : "hidden"}>
           <Composer
+            ref={composer}
             streaming={chat.streaming}
             disabled={!online}
+            disabledReason={
+              gateway.status === "offline"
+                ? "Gateway offline: run make gateway"
+                : "This backend is offline: pick another one or start it"
+            }
             thinking={settings.thinking}
-            onToggleThinking={() => setSettings((s) => ({ ...s, thinking: !s.thinking }))}
+            onToggleThinking={toggleThinking}
             onSend={send}
             onStop={chat.stop}
           />
-          <p className="mt-2 text-center text-xs text-zinc-600">
-            Local models make mistakes. Metrics under each reply are measured live in your browser.
+          <p className="mt-2 text-center text-[11px] text-zinc-600">
+            Runs locally. Metrics under each reply are measured live in your browser.
           </p>
         </div>
       </main>
@@ -225,6 +269,8 @@ export default function App() {
           settings={settings}
           onChange={setSettings}
           onClose={() => setSettingsOpen(false)}
+          onClearHistory={chat.clearAll}
+          conversationCount={chat.conversations.length}
         />
       )}
     </div>

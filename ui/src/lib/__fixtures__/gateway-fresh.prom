@@ -1,0 +1,155 @@
+# Captured from the llm-gateway /metrics endpoint (fresh start, no traffic), trimmed: most python_*
+# collectors and the ollama-mlx histogram series removed.
+# HELP python_info Python platform information
+# TYPE python_info gauge
+python_info{implementation="CPython",major="3",minor="12",patchlevel="13",version="3.12.13"} 1.0
+# HELP python_gc_objects_collected_total Objects collected during gc
+# TYPE python_gc_objects_collected_total counter
+python_gc_objects_collected_total{generation="0"} 18030.0
+python_gc_objects_collected_total{generation="1"} 1853.0
+python_gc_objects_collected_total{generation="2"} 10.0
+# HELP llm_gateway_requests_total Chat completion requests by backend and outcome.
+# TYPE llm_gateway_requests_total counter
+llm_gateway_requests_total{backend="llamacpp",outcome="ok"} 0.0
+llm_gateway_requests_total{backend="mlx",outcome="ok"} 0.0
+llm_gateway_requests_total{backend="ollama-gguf",outcome="ok"} 0.0
+llm_gateway_requests_total{backend="ollama-mlx",outcome="ok"} 0.0
+# HELP llm_gateway_requests_created Chat completion requests by backend and outcome.
+# TYPE llm_gateway_requests_created gauge
+llm_gateway_requests_created{backend="llamacpp",outcome="ok"} 1.7933377068409889e+09
+llm_gateway_requests_created{backend="mlx",outcome="ok"} 1.793337706841133e+09
+llm_gateway_requests_created{backend="ollama-gguf",outcome="ok"} 1.793337706841239e+09
+llm_gateway_requests_created{backend="ollama-mlx",outcome="ok"} 1.793337706841274e+09
+# HELP llm_gateway_in_flight_requests Requests currently being served.
+# TYPE llm_gateway_in_flight_requests gauge
+llm_gateway_in_flight_requests{backend="llamacpp"} 0.0
+llm_gateway_in_flight_requests{backend="mlx"} 0.0
+llm_gateway_in_flight_requests{backend="ollama-gguf"} 0.0
+llm_gateway_in_flight_requests{backend="ollama-mlx"} 0.0
+# HELP llm_gateway_time_to_first_token_seconds Time from receiving a streaming request to relaying its first token.
+# TYPE llm_gateway_time_to_first_token_seconds histogram
+llm_gateway_time_to_first_token_seconds_bucket{backend="llamacpp",le="0.05"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="llamacpp",le="0.1"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="llamacpp",le="0.25"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="llamacpp",le="0.5"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="llamacpp",le="1.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="llamacpp",le="2.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="llamacpp",le="2.5"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="llamacpp",le="5.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="llamacpp",le="10.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="llamacpp",le="30.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="llamacpp",le="60.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="llamacpp",le="+Inf"} 0.0
+llm_gateway_time_to_first_token_seconds_count{backend="llamacpp"} 0.0
+llm_gateway_time_to_first_token_seconds_sum{backend="llamacpp"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="mlx",le="0.05"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="mlx",le="0.1"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="mlx",le="0.25"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="mlx",le="0.5"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="mlx",le="1.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="mlx",le="2.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="mlx",le="2.5"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="mlx",le="5.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="mlx",le="10.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="mlx",le="30.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="mlx",le="60.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="mlx",le="+Inf"} 0.0
+llm_gateway_time_to_first_token_seconds_count{backend="mlx"} 0.0
+llm_gateway_time_to_first_token_seconds_sum{backend="mlx"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="ollama-gguf",le="0.05"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="ollama-gguf",le="0.1"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="ollama-gguf",le="0.25"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="ollama-gguf",le="0.5"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="ollama-gguf",le="1.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="ollama-gguf",le="2.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="ollama-gguf",le="2.5"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="ollama-gguf",le="5.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="ollama-gguf",le="10.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="ollama-gguf",le="30.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="ollama-gguf",le="60.0"} 0.0
+llm_gateway_time_to_first_token_seconds_bucket{backend="ollama-gguf",le="+Inf"} 0.0
+llm_gateway_time_to_first_token_seconds_count{backend="ollama-gguf"} 0.0
+llm_gateway_time_to_first_token_seconds_sum{backend="ollama-gguf"} 0.0
+# HELP llm_gateway_time_to_first_token_seconds_created Time from receiving a streaming request to relaying its first token.
+# TYPE llm_gateway_time_to_first_token_seconds_created gauge
+llm_gateway_time_to_first_token_seconds_created{backend="llamacpp"} 1.793337706841038e+09
+llm_gateway_time_to_first_token_seconds_created{backend="mlx"} 1.7933377068411572e+09
+llm_gateway_time_to_first_token_seconds_created{backend="ollama-gguf"} 1.793337706841245e+09
+# HELP llm_gateway_time_per_output_token_seconds Average time per output token after the first, per request.
+# TYPE llm_gateway_time_per_output_token_seconds histogram
+llm_gateway_time_per_output_token_seconds_bucket{backend="llamacpp",le="0.005"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="llamacpp",le="0.01"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="llamacpp",le="0.015"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="llamacpp",le="0.02"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="llamacpp",le="0.03"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="llamacpp",le="0.05"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="llamacpp",le="0.075"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="llamacpp",le="0.1"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="llamacpp",le="0.25"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="llamacpp",le="0.5"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="llamacpp",le="+Inf"} 0.0
+llm_gateway_time_per_output_token_seconds_count{backend="llamacpp"} 0.0
+llm_gateway_time_per_output_token_seconds_sum{backend="llamacpp"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="mlx",le="0.005"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="mlx",le="0.01"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="mlx",le="0.015"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="mlx",le="0.02"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="mlx",le="0.03"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="mlx",le="0.05"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="mlx",le="0.075"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="mlx",le="0.1"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="mlx",le="0.25"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="mlx",le="0.5"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="mlx",le="+Inf"} 0.0
+llm_gateway_time_per_output_token_seconds_count{backend="mlx"} 0.0
+llm_gateway_time_per_output_token_seconds_sum{backend="mlx"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="ollama-gguf",le="0.005"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="ollama-gguf",le="0.01"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="ollama-gguf",le="0.015"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="ollama-gguf",le="0.02"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="ollama-gguf",le="0.03"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="ollama-gguf",le="0.05"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="ollama-gguf",le="0.075"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="ollama-gguf",le="0.1"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="ollama-gguf",le="0.25"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="ollama-gguf",le="0.5"} 0.0
+llm_gateway_time_per_output_token_seconds_bucket{backend="ollama-gguf",le="+Inf"} 0.0
+llm_gateway_time_per_output_token_seconds_count{backend="ollama-gguf"} 0.0
+llm_gateway_time_per_output_token_seconds_sum{backend="ollama-gguf"} 0.0
+# HELP llm_gateway_time_per_output_token_seconds_created Average time per output token after the first, per request.
+# TYPE llm_gateway_time_per_output_token_seconds_created gauge
+llm_gateway_time_per_output_token_seconds_created{backend="llamacpp"} 1.7933377068411012e+09
+llm_gateway_time_per_output_token_seconds_created{backend="mlx"} 1.793337706841216e+09
+llm_gateway_time_per_output_token_seconds_created{backend="ollama-gguf"} 1.793337706841255e+09
+# HELP llm_gateway_prompt_tokens_total Prompt tokens reported by upstream usage.
+# TYPE llm_gateway_prompt_tokens_total counter
+llm_gateway_prompt_tokens_total{backend="llamacpp"} 0.0
+llm_gateway_prompt_tokens_total{backend="mlx"} 0.0
+llm_gateway_prompt_tokens_total{backend="ollama-gguf"} 0.0
+llm_gateway_prompt_tokens_total{backend="ollama-mlx"} 0.0
+# HELP llm_gateway_prompt_tokens_created Prompt tokens reported by upstream usage.
+# TYPE llm_gateway_prompt_tokens_created gauge
+llm_gateway_prompt_tokens_created{backend="llamacpp"} 1.793337706841115e+09
+llm_gateway_prompt_tokens_created{backend="mlx"} 1.793337706841227e+09
+llm_gateway_prompt_tokens_created{backend="ollama-gguf"} 1.793337706841266e+09
+llm_gateway_prompt_tokens_created{backend="ollama-mlx"} 1.793337706841453e+09
+# HELP llm_gateway_queue_depth Requests waiting for an admission slot.
+# TYPE llm_gateway_queue_depth gauge
+llm_gateway_queue_depth{backend="llamacpp"} 0.0
+llm_gateway_queue_depth{backend="mlx"} 0.0
+llm_gateway_queue_depth{backend="ollama-gguf"} 0.0
+llm_gateway_queue_depth{backend="ollama-mlx"} 0.0
+# HELP llm_gateway_fallbacks_total Requests re-routed from one backend to another.
+# TYPE llm_gateway_fallbacks_total counter
+# HELP llm_gateway_output_tokens_total Completion tokens reported by upstream usage.
+# TYPE llm_gateway_output_tokens_total counter
+llm_gateway_output_tokens_total{backend="llamacpp"} 0.0
+llm_gateway_output_tokens_total{backend="mlx"} 0.0
+llm_gateway_output_tokens_total{backend="ollama-gguf"} 0.0
+llm_gateway_output_tokens_total{backend="ollama-mlx"} 0.0
+# HELP llm_gateway_output_tokens_created Completion tokens reported by upstream usage.
+# TYPE llm_gateway_output_tokens_created gauge
+llm_gateway_output_tokens_created{backend="llamacpp"} 1.7933377068411179e+09
+llm_gateway_output_tokens_created{backend="mlx"} 1.793337706841229e+09
+llm_gateway_output_tokens_created{backend="ollama-gguf"} 1.793337706841268e+09
+llm_gateway_output_tokens_created{backend="ollama-mlx"} 1.793337706841459e+09

@@ -18,15 +18,15 @@ tool-calling **agent harness** and an **eval harness** written from scratch, and
 measurement code is in the repo.
 
 <p align="center">
-  <img src="docs/assets/arena.gif" alt="Arena mode: llama.cpp and MLX-LM stream answers to the same prompt side by side" width="100%">
+  <img src="docs/assets/arena.gif" alt="Arena mode: llama.cpp and MLX-LM stream answers to the same prompt side by side with live TTFT and tok/s" width="100%">
 </p>
 
-| Chat with thinking, LaTeX and live metrics | Arena verdict with fair timing |
-|---|---|
-| ![Chat UI: a reasoning answer with rendered LaTeX, thought for 21.3 s, 307 ms TTFT, 41.1 tok/s](docs/assets/chat.png) | ![Arena: llama.cpp 1.56× faster to first token, MLX-LM 1.31× faster decode](docs/assets/arena.png) |
+| Chat: thinking, LaTeX, live metrics | Arena: race, compare, vote | Monitor: live gateway metrics |
+|---|---|---|
+| ![Chat UI with a reasoning answer, rendered LaTeX and per-reply metrics](docs/assets/chat.png) | ![Arena round with comparison bars, speed ratios, votes and scoreboard](docs/assets/arena.png) | ![Monitor dashboard: throughput, TTFT p95, queueing and fallbacks per backend](docs/assets/monitor.png) |
 
-The Arena's verdict on one prompt (llama.cpp 1.56× faster to first token, MLX-LM 1.31×
-faster decode) matches what the isolated benchmark below measures across 128 requests.
+The Monitor screenshot was taken under load: llama.cpp hit its admission limit, queued six
+requests and sent two to MLX-LM through the gateway's fallback, all visible live.
 
 ## Results: one model, four setups, one MacBook
 
@@ -113,7 +113,7 @@ intervals. Raw data: [`benchmarks/evals/20261029-211158`](benchmarks/evals/20261
 | ✅ | [`inference/`](inference) | Serves the same model four ways with matched settings, plus a field guide to the traps found along the way |
 | ✅ | [`packages/llm-bench`](packages/llm-bench) | Async load generator for any OpenAI-compatible server: TTFT, TPOT, ITL p99, prefill speed, throughput under concurrency |
 | ✅ | [`services/gateway`](services/gateway) | One OpenAI-compatible endpoint for every engine: routing, admission control and fallback, engine-quirk normalization, streaming with cancellation, Prometheus TTFT/TPOT histograms. Adds ~1 ms TTFT ([measured](benchmarks/results/20261030-004000-gateway-overhead/README.md)) |
-| ✅ | [`ui/`](ui) | ChatGPT-style chat with live per-reply metrics, thinking mode, markdown/code/LaTeX, and an **Arena** that races two engines on the same prompt |
+| ✅ | [`ui/`](ui) | ChatGPT-style chat with live streaming metrics, thinking mode, markdown/code/LaTeX, edit and export; an **Arena** that races two engines with voting and a scoreboard; a live **Monitor** of the gateway's Prometheus metrics |
 | ✅ | [`benchmarks/`](benchmarks) | Committed, reproducible results with hardware and server-build metadata |
 | ✅ | [CI](.github/workflows/ci.yml) | Ruff, strict mypy, ~400 tests, UI format/typecheck/tests/build, Docker image build with a smoke test of the whole stack, and **benchmark, evals and agent runs against a real llama.cpp server** on every push |
 | ✅ | [`packages/agent`](packages/agent) | Tool-calling agent loop from scratch: schema generation from typed functions, parallel calls, error recovery, workspace-scoped tools, JSONL traces |

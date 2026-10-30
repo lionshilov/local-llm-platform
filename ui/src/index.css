@@ -3,9 +3,59 @@
 
 @theme {
   --color-zinc-925: oklch(0.18 0.005 286);
+  --color-ink: #07070a;
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --animate-fade-up: fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.25s ease-out both;
+  --animate-scale-in: scale-in 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97) translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* Frosted surface used by panels, cards and popovers. */
+@utility glass {
+  background-color: rgb(255 255 255 / 0.025);
+  border: 1px solid rgb(255 255 255 / 0.07);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+
+/* Muted label style used for section captions. */
+@utility caption {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-zinc-500);
 }
 
 html {
@@ -13,12 +63,29 @@ html {
 }
 
 body {
-  @apply bg-zinc-950 antialiased;
+  @apply bg-ink text-zinc-100 antialiased;
+  font-feature-settings:
+    "cv11" 1,
+    "ss01" 1;
+}
+
+/* Soft brand glow behind everything; fixed so it doesn't scroll with content. */
+.app-backdrop {
+  background:
+    radial-gradient(900px 520px at 12% -8%, rgb(139 92 246 / 0.13), transparent 62%),
+    radial-gradient(760px 480px at 105% 8%, rgb(56 189 248 / 0.07), transparent 60%),
+    radial-gradient(700px 420px at 60% 115%, rgb(217 70 239 / 0.06), transparent 60%);
+}
+
+.text-gradient {
+  background: linear-gradient(180deg, #fafafa 20%, #a1a1aa 110%);
+  background-clip: text;
+  color: transparent;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(255 255 255 / 0.12) transparent;
+  scrollbar-color: rgb(255 255 255 / 0.1) transparent;
 }
 
 /* Code blocks: the wrapper in Markdown.tsx owns padding and background. */
@@ -82,5 +149,14 @@ body {
   }
   to {
     background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

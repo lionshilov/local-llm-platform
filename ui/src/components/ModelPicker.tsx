@@ -1,39 +1,26 @@
-import { Check, ChevronDown, Cpu } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { engineMeta, splitLabel } from "../lib/engines";
 import type { ModelInfo } from "../lib/types";
-
-const ENGINE_NAMES: Record<string, string> = {
-  llamacpp: "llama.cpp",
-  mlx: "MLX-LM",
-  ollama: "Ollama",
-  openai: "OpenAI-compatible",
-};
-
-function StatusDot({ up }: { up: boolean }) {
-  return (
-    <span className="relative flex size-2">
-      {up && (
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-40" />
-      )}
-      <span
-        className={`relative inline-flex size-2 rounded-full ${up ? "bg-emerald-400" : "bg-zinc-600"}`}
-      />
-    </span>
-  );
-}
+import { EngineAvatar, StatusDot } from "./EngineAvatar";
 
 export function ModelPicker({
   models,
   value,
   onChange,
+  align = "left",
 }: {
   models: ModelInfo[];
   value: string | null;
   onChange: (id: string) => void;
+  align?: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const current = models.find((m) => m.id === value);
+  const currentMeta = engineMeta(current?.owned_by);
+  const { model: currentModel } = splitLabel(current?.label ?? "Select a model");
+  const online = models.filter((m) => m.available).length;
 
   useEffect(() => {
     if (!open) return;
@@ -54,46 +41,76 @@ export function ModelPicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex max-w-full items-center gap-2 rounded-xl px-3 py-2 text-[15px] font-medium whitespace-nowrap text-zinc-100 transition hover:bg-white/5"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="flex max-w-full items-center gap-2.5 rounded-xl py-1.5 pr-2.5 pl-1.5 whitespace-nowrap transition hover:bg-white/[0.05]"
       >
-        {current ? <StatusDot up={current.available} /> : <Cpu className="size-4 shrink-0" />}
-        <span className="truncate sm:hidden">
-          {current?.label.split("·").pop()?.trim() ?? "Model"}
+        <EngineAvatar engine={current?.owned_by} size="sm" />
+        <span className="flex min-w-0 items-baseline gap-1.5">
+          <span
+            className={`hidden truncate text-[15px] font-medium min-[420px]:inline ${currentMeta.text}`}
+          >
+            {current ? currentMeta.name : "No backend"}
+          </span>
+          <span className="hidden truncate text-sm text-zinc-500 sm:inline">{currentModel}</span>
         </span>
-        <span className="hidden truncate sm:inline">{current?.label ?? "Select a model"}</span>
-        <ChevronDown className="size-4 shrink-0 text-zinc-500" />
+        {current && <StatusDot up={current.available} />}
+        <ChevronDown
+          className={`size-4 shrink-0 text-zinc-500 transition ${open ? "rotate-180" : ""}`}
+        />
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 z-30 mt-2 w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 p-1.5 shadow-2xl shadow-black/50 backdrop-blur">
-          <div className="px-3 pt-2 pb-1 text-xs font-medium tracking-wide text-zinc-500 uppercase">
-            Local backends
+        <div
+          role="listbox"
+          className={`absolute top-full z-40 mt-2 w-[22rem] max-w-[calc(100vw-1.5rem)] origin-top animate-scale-in overflow-hidden rounded-2xl glass bg-zinc-900/90 p-1.5 shadow-2xl shadow-black/60 ${align === "right" ? "right-0" : "left-0"}`}
+        >
+          <div className="flex items-center justify-between px-3 pt-2 pb-1.5">
+            <span className="caption">Backends</span>
+            <span className="font-mono text-[11px] text-zinc-500">
+              {online}/{models.length} online
+            </span>
           </div>
-          {models.map((m) => (
-            <button
-              type="button"
-              key={m.id}
-              onClick={() => {
-                onChange(m.id);
-                setOpen(false);
-              }}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5"
-            >
-              <StatusDot up={m.available} />
-              <div className="min-w-0 flex-1">
-                <div className={`text-sm ${m.available ? "text-zinc-100" : "text-zinc-500"}`}>
-                  {m.label}
+          {models.map((m) => {
+            const meta = engineMeta(m.owned_by);
+            const { model } = splitLabel(m.label);
+            return (
+              <button
+                type="button"
+                role="option"
+                aria-selected={m.id === value}
+                key={m.id}
+                onClick={() => {
+                  onChange(m.id);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition hover:bg-white/[0.05] ${m.id === value ? "bg-white/[0.04]" : ""}`}
+              >
+                <EngineAvatar engine={m.owned_by} size="md" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-sm font-medium ${m.available ? meta.text : "text-zinc-500"}`}
+                    >
+                      {meta.name}
+                    </span>
+                    <span className="truncate text-sm text-zinc-400">{model}</span>
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[11px] text-zinc-500">
+                    <StatusDot up={m.available} />
+                    <span>{m.available ? "online" : "offline"}</span>
+                    <span className="text-zinc-700">·</span>
+                    <span className="truncate">{m.upstream_model}</span>
+                  </div>
                 </div>
-                <div className="truncate font-mono text-[11px] text-zinc-500">
-                  {ENGINE_NAMES[m.owned_by] ?? m.owned_by} · {m.upstream_model}
-                  {!m.available && " · offline"}
-                </div>
-              </div>
-              {m.id === value && <Check className="size-4 text-zinc-300" />}
-            </button>
-          ))}
+                {m.id === value && <Check className="size-4 shrink-0 text-zinc-300" />}
+              </button>
+            );
+          })}
           {models.length === 0 && (
-            <div className="px-3 py-4 text-sm text-zinc-500">No backends configured.</div>
+            <div className="px-3 py-6 text-center text-sm text-zinc-500">
+              Gateway unreachable. Run <code className="font-mono text-zinc-300">make gateway</code>
+            </div>
           )}
         </div>
       )}

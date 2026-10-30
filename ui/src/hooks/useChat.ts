@@ -48,6 +48,7 @@ export function useChat(settings: Settings) {
         reasoning: "",
         model,
         status: "streaming",
+        createdAt: Date.now(),
       };
       setConversations((all) =>
         all.map((c) =>
@@ -76,7 +77,12 @@ export function useChat(settings: Settings) {
 
   const send = useCallback(
     (text: string, model: string) => {
-      const userMessage: ChatMessage = { id: newId(), role: "user", content: text };
+      const userMessage: ChatMessage = {
+        id: newId(),
+        role: "user",
+        content: text,
+        createdAt: Date.now(),
+      };
       let conversation = active;
       if (!conversation) {
         const now = Date.now();
@@ -107,6 +113,31 @@ export function useChat(settings: Settings) {
     [active, generate],
   );
 
+  /** Replace a user message and regenerate everything after it. */
+  const editAndResend = useCallback(
+    (messageId: string, text: string, model: string) => {
+      if (!active) return;
+      const index = active.messages.findIndex((m) => m.id === messageId);
+      const original = active.messages[index];
+      if (!original || original.role !== "user") return;
+      const edited: ChatMessage = { ...original, content: text, createdAt: Date.now() };
+      void generate(active.id, [...active.messages.slice(0, index), edited], model);
+    },
+    [active, generate],
+  );
+
+  const rename = useCallback((id: string, title: string) => {
+    const clean = title.trim();
+    if (!clean) return;
+    setConversations((all) => all.map((c) => (c.id === id ? { ...c, title: clean } : c)));
+  }, []);
+
+  const clearAll = useCallback(() => {
+    abortRef.current?.abort();
+    setActiveId(null);
+    setConversations([]);
+  }, []);
+
   const stop = useCallback(() => abortRef.current?.abort(), []);
 
   const newChat = useCallback(() => setActiveId(null), []);
@@ -126,6 +157,9 @@ export function useChat(settings: Settings) {
     streaming,
     send,
     regenerate,
+    editAndResend,
+    rename,
+    clearAll,
     stop,
     newChat,
     select: setActiveId,

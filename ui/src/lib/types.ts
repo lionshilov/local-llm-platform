@@ -18,6 +18,14 @@ export interface MessageStats {
   servedBy: string | null;
 }
 
+/** Running numbers while a reply streams; replaced by MessageStats when it finishes. */
+export interface LiveStats {
+  elapsedMs: number;
+  ttftMs: number | null;
+  tokens: number;
+  tokensPerSecond: number | null;
+}
+
 export type MessageStatus = "streaming" | "done" | "stopped" | "error";
 
 export interface ChatMessage {
@@ -28,7 +36,9 @@ export interface ChatMessage {
   model?: string;
   status?: MessageStatus;
   stats?: MessageStats;
+  live?: LiveStats;
   error?: string;
+  createdAt?: number;
 }
 
 export interface Conversation {
