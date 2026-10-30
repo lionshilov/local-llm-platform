@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -55,9 +56,16 @@ def fake_backend(monkeypatch: pytest.MonkeyPatch) -> ScriptedServer:
     return server
 
 
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+_BOX = re.compile(r"[│╭╮╰╯─]")
+
+
 def _text(output: str) -> str:
-    """Console output with Rich's line wrapping undone."""
-    return " ".join(output.split())
+    """Console output without colours, panel borders or Rich's line wrapping.
+
+    CI (GITHUB_ACTIONS) makes Rich emit ANSI colours, which split messages mid-word.
+    """
+    return " ".join(_BOX.sub(" ", _ANSI.sub("", output)).split())
 
 
 def _run(runner: CliRunner, config: Path, out: Path, *args: str) -> Path:
