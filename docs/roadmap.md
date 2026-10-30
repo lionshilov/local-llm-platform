@@ -25,7 +25,7 @@ Each phase ships something that runs, is tested in CI, and has numbers behind it
 - [x] Admission control: per-backend concurrency limits with a bounded queue (429s, not timeouts)
 - [ ] Per-API-key limits and a shared limiter for multiple gateway replicas
 - [ ] OpenTelemetry traces
-- [ ] Measure gateway overhead with `llm-bench` (target: < 2 ms added TTFT)
+- [x] Measure gateway overhead with `llm-bench`: ~1 ms TTFT and ~7 µs per token against an instant backend
 
 ## Phase 3: Agent harness ✅
 

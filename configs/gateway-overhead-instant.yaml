@@ -1,0 +1,25 @@
+# Gateway cost in isolation: an instant fake backend (benchmarks/tools/instant_backend.py)
+# called directly and through a gateway instance that points at it.
+#
+#   uv run python benchmarks/tools/instant_backend.py --port 9100 &
+#   uv run llm-gateway --config configs/gateway-instant.yaml --port 8200 &
+#   uv run llm-bench run -c configs/gateway-overhead-instant.yaml
+
+engines:
+  direct:
+    label: instant backend, direct
+    base_url: http://127.0.0.1:9100/v1
+    model: instant
+
+  gateway:
+    label: instant backend, via gateway
+    base_url: http://127.0.0.1:8200/v1
+    model: instant
+
+scenarios:
+  relay:
+    description: 64 tokens with no model behind them; every millisecond is client, network or gateway.
+    prompt_words: 40
+    max_tokens: 64
+    concurrency: [1, 16]
+    requests_per_level: 200

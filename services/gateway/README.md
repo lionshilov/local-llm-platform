@@ -56,6 +56,20 @@ Slots are released exactly once on every path: normal completion, upstream error
 client disconnect mid-stream, and a disconnect before the first chunk (when the stream
 generator never starts, a response background task releases the slot).
 
+## Overhead
+
+Measured against an instant fake backend, so the engine contributes nothing
+([full results](../../benchmarks/results/20261030-004000-gateway-overhead/README.md)):
+
+| | Direct | Via gateway |
+|---|---:|---:|
+| TTFT p50, 1 user | 1 ms | 2 ms |
+| Time per token | ~9 µs | ~16 µs |
+| Relay capacity, one process | | ~20k tokens/s |
+
+About 1 ms of added TTFT and 7 µs per token, with ~250× headroom over what the engines on
+an M2 Pro generate. On a real engine the difference disappears in run-to-run noise.
+
 ## Metrics
 
 | Metric | Type | Labels |

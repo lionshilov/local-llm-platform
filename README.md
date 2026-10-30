@@ -112,7 +112,7 @@ intervals. Raw data: [`benchmarks/evals/20261029-211158`](benchmarks/evals/20261
 |---|---|---|
 | ✅ | [`inference/`](inference) | Serves the same model four ways with matched settings, plus a field guide to the traps found along the way |
 | ✅ | [`packages/llm-bench`](packages/llm-bench) | Async load generator for any OpenAI-compatible server: TTFT, TPOT, ITL p99, prefill speed, throughput under concurrency |
-| ✅ | [`services/gateway`](services/gateway) | One OpenAI-compatible endpoint for every engine: routing, engine-quirk normalization, streaming with cancellation, Prometheus TTFT/TPOT histograms |
+| ✅ | [`services/gateway`](services/gateway) | One OpenAI-compatible endpoint for every engine: routing, admission control and fallback, engine-quirk normalization, streaming with cancellation, Prometheus TTFT/TPOT histograms. Adds ~1 ms TTFT ([measured](benchmarks/results/20261030-004000-gateway-overhead/README.md)) |
 | ✅ | [`ui/`](ui) | ChatGPT-style chat with live per-reply metrics, thinking mode, markdown/code/LaTeX, and an **Arena** that races two engines on the same prompt |
 | ✅ | [`benchmarks/`](benchmarks) | Committed, reproducible results with hardware and server-build metadata |
 | ✅ | [CI](.github/workflows/ci.yml) | Ruff, strict mypy, ~400 tests, UI format/typecheck/tests/build, Docker image build with a smoke test of the whole stack, and **benchmark, evals and agent runs against a real llama.cpp server** on every push |

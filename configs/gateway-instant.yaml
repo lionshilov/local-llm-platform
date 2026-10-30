@@ -1,0 +1,8 @@
+# Gateway pointed at the instant fake backend; used by configs/gateway-overhead-instant.yaml.
+
+backends:
+  instant:
+    label: instant fake backend
+    engine: openai
+    base_url: http://127.0.0.1:9100/v1
+    model: instant
