@@ -1,0 +1,308 @@
+# Original single-turn function-calling requests against a fixed toolbox of ten tools.
+# 23 items need a call (3 of them two parallel calls); 7 need no call: general knowledge,
+# small talk, a capability the toolbox lacks, and requests missing a required argument
+# (the system prompt says to ask instead of guessing).
+#
+# Today's date is in the system prompt so relative dates ("tomorrow") have one answer.
+# Place names use $contains, so "Lisbon, Portugal" is as good as "Lisbon".
+
+name: tools
+kind: tools
+description: Single-turn function calling, including when not to call a tool.
+
+system: >-
+  You are a helpful assistant with access to tools. Today is Tuesday, 2025-03-04.
+  Call a tool only when it is needed to fulfil the request; otherwise answer directly.
+  If a request is missing information that a tool needs, ask the user for it instead of
+  guessing.
+
+tools:
+  - name: get_weather
+    description: Get the current weather in a city, or the forecast for a given date.
+    parameters:
+      type: object
+      properties:
+        city: {type: string, description: "City name, e.g. Paris."}
+        unit: {type: string, enum: [celsius, fahrenheit], description: Defaults to celsius.}
+        date:
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: Forecast date as YYYY-MM-DD. Omit for the current weather.
+      required: [city]
+      additionalProperties: false
+
+  - name: convert_currency
+    description: Convert an amount of money from one currency to another at today's rate.
+    parameters:
+      type: object
+      properties:
+        amount: {type: number}
+        from_currency:
+          {type: string, pattern: '^[A-Z]{3}$', description: "ISO 4217 code, e.g. USD."}
+        to_currency:
+          {type: string, pattern: '^[A-Z]{3}$', description: "ISO 4217 code, e.g. EUR."}
+      required: [amount, from_currency, to_currency]
+      additionalProperties: false
+
+  - name: create_event
+    description: Create an event in the user's calendar.
+    parameters:
+      type: object
+      properties:
+        title: {type: string}
+        date: {type: string, pattern: '^\d{4}-\d{2}-\d{2}$', description: YYYY-MM-DD}
+        start_time: {type: string, pattern: '^\d{2}:\d{2}$', description: "HH:MM, 24-hour clock"}
+        duration_minutes: {type: integer, minimum: 1}
+        attendees:
+          type: array
+          items: {type: string}
+          description: Names or email addresses of people to invite.
+      required: [title, date, start_time, duration_minutes]
+      additionalProperties: false
+
+  - name: search_products
+    description: Search the online store's product catalog.
+    parameters:
+      type: object
+      properties:
+        query: {type: string}
+        category: {type: string, enum: [electronics, clothing, home, sports, books, toys]}
+        max_price: {type: number, description: Maximum price in USD.}
+        in_stock_only: {type: boolean}
+      required: [query]
+      additionalProperties: false
+
+  - name: set_timer
+    description: Start a countdown timer on the user's device.
+    parameters:
+      type: object
+      properties:
+        duration_seconds: {type: integer, minimum: 1}
+        label: {type: string}
+      required: [duration_seconds]
+      additionalProperties: false
+
+  - name: get_stock_price
+    description: Get the latest trading price of a stock by its ticker symbol.
+    parameters:
+      type: object
+      properties:
+        ticker: {type: string, pattern: '^[A-Z.]{1,6}$', description: "Ticker symbol, e.g. IBM."}
+      required: [ticker]
+      additionalProperties: false
+
+  - name: send_email
+    description: Send an email from the user's account.
+    parameters:
+      type: object
+      properties:
+        to: {type: string, description: Recipient email address.}
+        subject: {type: string}
+        body: {type: string}
+      required: [to, subject, body]
+      additionalProperties: false
+
+  - name: translate_text
+    description: Translate text into another language.
+    parameters:
+      type: object
+      properties:
+        text: {type: string}
+        target_language:
+          type: string
+          pattern: '^[a-z]{2}$'
+          description: ISO 639-1 language code, e.g. fr.
+      required: [text, target_language]
+      additionalProperties: false
+
+  - name: lookup_order
+    description: Look up the status of an order in the online store.
+    parameters:
+      type: object
+      properties:
+        order_id: {type: string, pattern: '^ORD-\d{6}$'}
+      required: [order_id]
+      additionalProperties: false
+
+  - name: get_directions
+    description: Get directions and travel time between two places.
+    parameters:
+      type: object
+      properties:
+        origin: {type: string}
+        destination: {type: string}
+        mode: {type: string, enum: [driving, walking, cycling, transit]}
+      required: [origin, destination]
+      additionalProperties: false
+
+items:
+  - id: tools-01
+    prompt: What's the weather like in Lisbon right now?
+    calls:
+      - {name: get_weather, arguments: {city: {$contains: Lisbon}}}
+
+  - id: tools-02
+    prompt: Is it cold in Oslo at the moment? Give me the temperature in Fahrenheit.
+    calls:
+      - {name: get_weather, arguments: {city: {$contains: Oslo}, unit: fahrenheit}}
+
+  - id: tools-03
+    prompt: I'm flying to Tokyo tomorrow. Will I need an umbrella there?
+    calls:
+      - {name: get_weather, arguments: {city: {$contains: Tokyo}, date: "2025-03-05"}}
+
+  - id: tools-04
+    prompt: How much is 250 US dollars in euros?
+    calls:
+      - {name: convert_currency, arguments: {amount: 250, from_currency: USD, to_currency: EUR}}
+
+  - id: tools-05
+    prompt: Convert 1,200 Japanese yen to British pounds.
+    calls:
+      - {name: convert_currency, arguments: {amount: 1200, from_currency: JPY, to_currency: GBP}}
+
+  - id: tools-06
+    prompt: Schedule a meeting called "Budget review" tomorrow at 14:30 for 45 minutes.
+    calls:
+      - name: create_event
+        arguments:
+          title: Budget review
+          date: "2025-03-05"
+          start_time: "14:30"
+          duration_minutes: 45
+
+  - id: tools-07
+    prompt: Put "Dentist" in my calendar on 20 March at 9 am. It takes an hour.
+    calls:
+      - name: create_event
+        arguments: {title: Dentist, date: "2025-03-20", start_time: "09:00", duration_minutes: 60}
+
+  - id: tools-08
+    prompt: Set up a 30-minute call titled "Sprint sync" with Priya and Tom on March 12 at 4 pm.
+    calls:
+      - name: create_event
+        arguments:
+          title: Sprint sync
+          date: "2025-03-12"
+          start_time: "16:00"
+          duration_minutes: 30
+          attendees: [Priya, Tom]
+
+  - id: tools-09
+    prompt: Find me noise-cancelling headphones under $200.
+    calls:
+      - {name: search_products, arguments: {query: {$contains: headphones}, max_price: 200}}
+
+  - id: tools-10
+    prompt: Search the sports category for running shoes, and only show items that are in stock.
+    calls:
+      - name: search_products
+        arguments: {query: {$contains: running shoes}, category: sports, in_stock_only: true}
+
+  - id: tools-11
+    prompt: Set a timer for 10 minutes.
+    calls:
+      - {name: set_timer, arguments: {duration_seconds: 600}}
+
+  - id: tools-12
+    prompt: Start a timer for an hour and a half and call it laundry.
+    calls:
+      - {name: set_timer, arguments: {duration_seconds: 5400, label: laundry}}
+
+  - id: tools-13
+    prompt: What's Apple's stock trading at?
+    calls:
+      - {name: get_stock_price, arguments: {ticker: AAPL}}
+
+  - id: tools-14
+    prompt: How is NVDA doing today?
+    calls:
+      - {name: get_stock_price, arguments: {ticker: NVDA}}
+
+  - id: tools-15
+    prompt: >-
+      Email sam@example.com with the subject "Deploy finished" and tell him the deploy
+      went fine.
+    calls:
+      - name: send_email
+        arguments: {to: sam@example.com, subject: Deploy finished, body: {$contains: deploy}}
+
+  - id: tools-16
+    prompt: Translate "Where is the train station?" into German.
+    calls:
+      - name: translate_text
+        arguments: {text: {$contains: Where is the train station}, target_language: de}
+
+  - id: tools-17
+    prompt: What's the status of order ORD-482913?
+    calls:
+      - {name: lookup_order, arguments: {order_id: ORD-482913}}
+
+  - id: tools-18
+    prompt: My order number is ORD-100274. Has it shipped yet?
+    calls:
+      - {name: lookup_order, arguments: {order_id: ORD-100274}}
+
+  - id: tools-19
+    prompt: How do I walk from the Louvre to the Eiffel Tower?
+    calls:
+      - name: get_directions
+        arguments:
+          origin: {$contains: Louvre}
+          destination: {$contains: Eiffel Tower}
+          mode: walking
+
+  - id: tools-20
+    prompt: How long does it take to cycle from Utrecht to Amsterdam?
+    calls:
+      - name: get_directions
+        arguments:
+          origin: {$contains: Utrecht}
+          destination: {$contains: Amsterdam}
+          mode: cycling
+
+  - id: tools-21
+    prompt: Compare the current weather in Rome and Madrid.
+    calls:
+      - {name: get_weather, arguments: {city: {$contains: Rome}}}
+      - {name: get_weather, arguments: {city: {$contains: Madrid}}}
+
+  - id: tools-22
+    prompt: What are Microsoft's and Alphabet's share prices right now?
+    calls:
+      - {name: get_stock_price, arguments: {ticker: MSFT}}
+      - {name: get_stock_price, arguments: {ticker: {$any_of: [GOOGL, GOOG]}}}
+
+  - id: tools-23
+    prompt: Convert 100 euros to US dollars, and also check the weather in Berlin.
+    calls:
+      - {name: convert_currency, arguments: {amount: 100, from_currency: EUR, to_currency: USD}}
+      - {name: get_weather, arguments: {city: {$contains: Berlin}}}
+
+  - id: tools-24
+    prompt: What is the capital of Canada?
+    calls: []
+
+  - id: tools-25
+    prompt: Thanks, that's everything for now!
+    calls: []
+
+  - id: tools-26
+    prompt: Write a haiku about autumn leaves.
+    calls: []
+
+  - id: tools-27
+    prompt: Book me a hotel room in Paris for next weekend.
+    calls: []
+
+  - id: tools-28
+    prompt: Set a timer.
+    calls: []
+
+  - id: tools-29
+    prompt: Convert some money into euros for me.
+    calls: []
+
+  - id: tools-30
+    prompt: What is 15% of 80?
+    calls: []

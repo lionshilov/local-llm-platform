@@ -23,7 +23,7 @@ format: ## Auto-format and auto-fix lint issues
 check: ## Run everything CI runs (format, lint, types, tests, UI)
 	uv run ruff format --check .
 	uv run ruff check .
-	uv run mypy packages/llm-bench/src services/gateway/src
+	uv run mypy packages/llm-bench/src packages/agent/src packages/evals/src services/gateway/src
 	uv run pytest
 	cd ui && npm run format:check && npm run typecheck && npm test
 
@@ -49,6 +49,19 @@ serve-ollama: ## Run Ollama on :11434
 probe: ## Show which engines are up
 	uv run llm-bench probe
 
+## ---- agent & evals ----
+
+TASK ?= What is 17.5% of 2340, plus the square root of 1764?
+.PHONY: agent
+agent: ## Run the tool-calling agent against llama.cpp: make agent TASK="..."
+	uv run llm-agent run "$(TASK)"
+
+.PHONY: evals evals-smoke
+evals: ## Evaluate output quality of every backend in configs/evals.yaml
+	uv run llm-evals run --output-dir benchmarks/evals/$$(date -u +%Y%m%d-%H%M%S)
+evals-smoke: ## 3 items per suite against llama.cpp
+	uv run llm-evals run -b llamacpp --limit 3 --output-dir /tmp/llm-evals
+
 ## ---- gateway & chat UI ----
 
 ui/node_modules: ui/package-lock.json
@@ -69,6 +82,24 @@ gateway: ui/dist ## Serve the gateway API + chat UI on http://127.0.0.1:8000
 .PHONY: dev-ui
 dev-ui: ui/node_modules ## Chat UI with hot reload on :5173 (needs `make gateway`)
 	cd ui && npm run dev
+
+## ---- deploy (Docker Compose; engines stay native) ----
+
+COMPOSE := docker compose -f deploy/compose.yaml
+PROMTOOL := docker run --rm --entrypoint promtool -v "$(CURDIR)/deploy/prometheus:/p:ro" -w /p prom/prometheus:v3.15.1
+
+.PHONY: up down logs deploy-check
+up: ## Gateway + Prometheus + Grafana in Docker
+	$(COMPOSE) up -d --build --wait
+	@echo "Chat UI http://127.0.0.1:8100 · Grafana http://127.0.0.1:3300 · Prometheus http://127.0.0.1:9090"
+down: ## Stop the Docker stack (keeps Prometheus/Grafana data)
+	$(COMPOSE) down
+logs: ## Follow logs of the Docker stack
+	$(COMPOSE) logs -f
+deploy-check: ## Validate compose, Prometheus config, alert rules and their unit tests
+	$(COMPOSE) config --quiet
+	$(PROMTOOL) check config prometheus.yml
+	$(PROMTOOL) test rules alerts.test.yml
 
 .PHONY: bench
 bench: ## Benchmark all engines, one at a time, and write a combined report

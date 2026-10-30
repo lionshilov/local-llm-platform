@@ -66,7 +66,7 @@ Each of these is recorded with its trade-offs in the [architecture decision reco
 | [`packages/llm-bench`](../packages/llm-bench) | ✅ | Load generator + latency profiler for any OpenAI-compatible server |
 | [`services/gateway`](../services/gateway) | ✅ | Routing, engine-quirk normalization, streaming with cancellation, Prometheus metrics, serves the UI |
 | [`ui/`](../ui) | ✅ | Chat UI with live metrics, thinking mode and a two-engine Arena |
-| `packages/harness` | 🔜 | Tool-calling agent loop from scratch, structured output, sandboxed tools |
-| `packages/evals` | 🔜 | Task suites, LLM-as-judge, quantization quality vs speed |
+| [`packages/agent`](../packages/agent) | ✅ | Tool-calling agent loop from scratch, workspace-scoped tools, traces |
+| [`packages/evals`](../packages/evals) | ✅ | Programmatic quality evals with confidence intervals and paired tests |
 | `services/rag` | 🔜 | Local embeddings, vector search, reranking |
-| `deploy/` | 🔜 | Docker Compose stack, dashboards, CI gates |
+| [`deploy/`](../deploy) | ✅ | Docker Compose with Prometheus, Grafana dashboard and SLO alerts |

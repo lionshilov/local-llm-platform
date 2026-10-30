@@ -27,19 +27,26 @@ Each phase ships something that runs, is tested in CI, and has numbers behind it
 - [ ] OpenTelemetry traces
 - [ ] Measure gateway overhead with `llm-bench` (target: < 2 ms added TTFT)
 
-## Phase 3: Agent harness
+## Phase 3: Agent harness ✅
 
-- [ ] Tool-calling loop from scratch: JSON-schema tools, parallel calls, error recovery
+- [x] Tool-calling loop from scratch: JSON-schema tools, parallel calls, error recovery
+- [x] Scoped tools with explicit opt-in (workspace files, Python subprocess, SSRF-guarded HTTP)
+- [x] JSONL traces with per-step latency, tokens, cache hits and server timings
+- [x] 7/7 realistic multi-step tasks on Qwen3.5-4B
+- [ ] Real sandboxing for code execution (container or gVisor)
 - [ ] Structured output via grammar-constrained decoding (llama.cpp JSON schema)
-- [ ] Sandboxed tools (filesystem, shell, HTTP) with explicit permissions
 - [ ] MCP client support
 - [ ] Run OpenCode / Aider against the local gateway and document what works
 
-## Phase 4: Eval harness
+## Phase 4: Eval harness ✅
 
-- [ ] Task suites: tool-call accuracy, JSON validity, coding with unit tests, RAG faithfulness
+- [x] Original suites with programmatic scoring: math, reasoning, JSON (prompted vs constrained), tool calls, instruction following
+- [x] Wilson intervals, paired McNemar tests, versioned result files with suite hashes
+- [x] Thinking on vs off: no significant gain at ~6× the cost
+- [x] Smoke run against a real server in CI
+- [ ] Coding with unit tests and RAG faithfulness suites
+- [ ] Quantization sweep (Q4_K_M vs Q8_0 vs bf16) and engines side by side
 - [ ] LLM-as-judge with calibration against human labels
-- [ ] Quality vs speed vs memory across models and quantizations
 - [ ] Regression gate in CI
 
 ## Phase 5: RAG
@@ -48,8 +55,10 @@ Each phase ships something that runs, is tested in CI, and has numbers behind it
 - [ ] Vector store (Qdrant or pgvector), hybrid search, reranker
 - [ ] End-to-end evaluation with Phase 4
 
-## Phase 6: Deploy and operate
+## Phase 6: Deploy and operate ✅
 
-- [ ] Docker Compose: gateway, vector DB, Prometheus, Grafana dashboards
-- [ ] SLOs and alerting on TTFT / error rate
+- [x] Docker Compose: hardened gateway image, Prometheus, provisioned Grafana dashboard
+- [x] SLOs and multi-window burn-rate alerts on availability, TTFT and TPOT, unit-tested with promtool
+- [x] CI builds the image and smoke-tests the whole stack
+- [ ] Vector DB in Compose (with Phase 5)
 - [ ] GPU deployment recipe (vLLM on a cloud GPU) behind the same gateway

@@ -1,0 +1,233 @@
+# Original multiple-choice logic and common-sense questions. Some follow well-known puzzle
+# archetypes (knights and knaves, mislabelled boxes), but wording, names and numbers are
+# new. Answer letters are balanced so that always guessing one letter scores ~25%.
+
+name: reasoning
+kind: choice
+description: Multiple-choice deduction, ordering, spatial and common-sense questions.
+
+items:
+  - id: reasoning-01
+    question: >-
+      Five runners (Ada, Bo, Cy, Di and Ed) finished a race with no ties. Bo finished
+      before Cy but after Ed. Ada finished last. Di finished immediately after Cy. Who
+      finished second?
+    options: [Ed, Cy, Bo, Di]
+    answer: C
+
+  - id: reasoning-02
+    question: All glimps are frabs. Some frabs are blue. Which statement must be true?
+    options:
+      - Some glimps are blue.
+      - No glimps are blue.
+      - All frabs are glimps.
+      - None of these statements must be true.
+    answer: D
+
+  - id: reasoning-03
+    question: >-
+      On an island, knights always tell the truth and knaves always lie. Ana says: "Ben is
+      a knave." Ben says: "Ana and I are the same type." What are Ana and Ben?
+    options:
+      - Ana is a knight and Ben is a knave.
+      - Both are knights.
+      - Ana is a knave and Ben is a knight.
+      - Both are knaves.
+    answer: A
+
+  - id: reasoning-04
+    question: >-
+      If the day after tomorrow is a Friday, what day of the week was it three days before
+      yesterday?
+    options: [Monday, Sunday, Friday, Saturday]
+    answer: D
+
+  - id: reasoning-05
+    question: >-
+      You are facing north. You turn 90 degrees to your right, then turn around 180
+      degrees, then turn 90 degrees to your left. Which direction are you facing now?
+    options: [North, South, East, West]
+    answer: B
+
+  - id: reasoning-06
+    question: >-
+      At a meeting, each of 6 people shakes hands with every other person exactly once.
+      How many handshakes take place?
+    options: ["12", "30", "15", "36"]
+    answer: C
+
+  - id: reasoning-07
+    question: >-
+      A glass is filled to the brim with water, with ice cubes floating in it. What happens
+      to the water level once all the ice has melted?
+    options:
+      - It stays the same, and nothing spills.
+      - The water overflows.
+      - The level drops below the brim.
+      - It depends on the shape of the glass.
+    answer: A
+
+  - id: reasoning-08
+    question: >-
+      A notebook and a pen cost $1.30 in total. The notebook costs $1.00 more than the pen.
+      How much does the pen cost?
+    options: ["$0.30", "$0.20", "$0.10", "$0.15"]
+    answer: D
+
+  - id: reasoning-09
+    question: What number comes next in the sequence 2, 6, 12, 20, 30, ...?
+    options: ["40", "42", "36", "44"]
+    answer: B
+
+  - id: reasoning-10
+    question: >-
+      If it rains, the match is cancelled. The match was not cancelled. What can you
+      conclude?
+    options:
+      - It rained.
+      - It did not rain.
+      - The match was played indoors.
+      - Nothing can be concluded.
+    answer: B
+
+  - id: reasoning-11
+    question: Every square has four sides. This shape has four sides. Which statement is correct?
+    options:
+      - The shape is a square.
+      - The shape is not a square.
+      - The shape may or may not be a square.
+      - The shape is a rectangle.
+    answer: C
+
+  - id: reasoning-12
+    question: >-
+      Mia is taller than Noor. Noor is taller than Ola. Pia is shorter than Ola. Quin is
+      taller than Mia. Who is the shortest?
+    options: [Pia, Noor, Ola, Quin]
+    answer: A
+
+  - id: reasoning-13
+    question: >-
+      Three boxes are labelled "Apples", "Oranges" and "Mixed", and every label is wrong.
+      You take one fruit from the box labelled "Mixed" and it is an orange. What does the
+      box labelled "Apples" contain?
+    options: [Apples only, Oranges only, Mixed fruit, It cannot be determined]
+    answer: C
+
+  - id: reasoning-14
+    question: >-
+      A wooden cube is painted red on every face and then cut into 27 equal smaller cubes.
+      How many of the small cubes have exactly two red faces?
+    options: ["12", "8", "6", "24"]
+    answer: A
+
+  - id: reasoning-15
+    question: A fair coin is flipped twice. What is the probability of getting at least one head?
+    options: [1/4, 1/2, 2/3, 3/4]
+    answer: D
+
+  - id: reasoning-16
+    question: >-
+      A flight leaves City X at 10:00 local time and lands in City Y at 13:00 local time.
+      Clocks in City Y are 2 hours behind clocks in City X. How long is the flight?
+    options: [1 hour, 5 hours, 3 hours, 2 hours]
+    answer: B
+
+  - id: reasoning-17
+    question: >-
+      A full glass bottle of water is tightly sealed and left in a freezer overnight. What
+      is the most likely result?
+    options:
+      - The bottle may crack, because water expands as it freezes.
+      - Nothing happens, because the bottle is sealed.
+      - The bottle implodes, because ice takes up less space than water.
+      - The water cannot freeze while the bottle is sealed.
+    answer: A
+
+  - id: reasoning-18
+    question: >-
+      A key is in exactly one of three places: the drawer, the bag or the shelf. Exactly one
+      of these statements is true: (1) The key is in the drawer. (2) The key is not in the
+      bag. (3) The key is not in the drawer. Where is the key?
+    options: [In the drawer, In the bag, On the shelf, It cannot be determined]
+    answer: B
+
+  - id: reasoning-19
+    question: >-
+      What is the smaller angle between the hour hand and the minute hand of a clock at
+      3:15?
+    options: [0 degrees, 15 degrees, 7.5 degrees, 22.5 degrees]
+    answer: C
+
+  - id: reasoning-20
+    question: Rita's mother has exactly one brother. That brother's daughter is Rita's what?
+    options: [Sister, Niece, Aunt, Cousin]
+    answer: D
+
+  - id: reasoning-21
+    question: >-
+      A shop opens Monday through Saturday and is closed only on Sundays. Today the shop is
+      closed. What day of the week will it be 10 days from today?
+    options: [Wednesday, Tuesday, Thursday, Friday]
+    answer: A
+
+  - id: reasoning-22
+    question: >-
+      4 printers print 4 posters in 6 minutes. Working at the same rate, how long do 12
+      printers take to print 12 posters?
+    options: [2 minutes, 6 minutes, 18 minutes, 12 minutes]
+    answer: B
+
+  - id: reasoning-23
+    question: >-
+      In a group of 30 students, 18 play football, 15 play tennis and 5 play neither. How
+      many play both?
+    options: ["3", "10", "13", "8"]
+    answer: D
+
+  - id: reasoning-24
+    question: "Which number does not belong in this list: 3, 7, 11, 15, 19, 22?"
+    options: ["7", "22", "15", "19"]
+    answer: B
+
+  - id: reasoning-25
+    question: >-
+      You have 9 coins that look identical; one is slightly heavier than the others. Using
+      only a balance scale, what is the minimum number of weighings that always finds the
+      heavy coin?
+    options: ["1", "2", "3", "4"]
+    answer: B
+
+  - id: reasoning-26
+    question: >-
+      Every member of the chess club plays the piano. Lena does not play the piano. Which
+      statement must be true?
+    options:
+      - Lena is in the chess club.
+      - Lena plays chess.
+      - Lena is not in the chess club.
+      - It cannot be determined.
+    answer: C
+
+  - id: reasoning-27
+    question: >-
+      Four friends sit in a row of four chairs. Cal sits in the leftmost chair. Ann does not
+      sit at either end. Bea sits directly to the right of Ann. Dev does not sit next to
+      Cal. Where does Dev sit?
+    options:
+      - The second chair from the left
+      - The third chair from the left
+      - The rightmost chair
+      - The leftmost chair
+    answer: C
+
+  - id: reasoning-28
+    question: >-
+      Maya's houseplant is wilting even though she waters it every day and the soil is
+      always soggy. What is the most likely cause?
+    options:
+      - Too much water is rotting the roots.
+      - It needs even more water.
+      - The pot is too large for the plant to notice the water.
+      - Plants wilt when they grow too fast.
+    answer: A

@@ -1,0 +1,19 @@
+# Eval smoke test used by GitHub Actions: a 0.8B model on llama.cpp's CPU backend and a
+# couple of items per suite. Proves the harness works end to end against a real server;
+# the scores themselves mean nothing.
+
+defaults:
+  concurrency: 2
+  max_tokens: 768
+  temperature: 0
+  timeout_s: 240
+  retries: 2
+
+backends:
+  llamacpp:
+    label: llama.cpp CPU (CI)
+    base_url: http://127.0.0.1:8080/v1
+    model: qwen3.5-0.8b
+    suites: [math, reasoning, json, tools, instructions]
+    extra_body:
+      chat_template_kwargs: {enable_thinking: false}

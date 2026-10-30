@@ -1,0 +1,82 @@
+# Backends for the eval harness (`llm-evals run`). Same shape as bench.yaml: any
+# OpenAI-compatible endpoint, plus engine-specific fields in extra_body.
+#
+# Quality comparisons only mean something if the backends differ in exactly one thing:
+# engine, quantization or thinking mode. Keep the rest identical.
+
+defaults:
+  concurrency: 2       # requests in flight per backend; the server may be shared
+  max_tokens: 1024     # enough for a short chain of thought plus the answer
+  temperature: 0       # greedy decoding: the model's single most likely answer
+  timeout_s: 300       # deadline per request; a timeout counts as a failure
+  retries: 2           # on connection errors only, never on timeouts or HTTP errors
+
+backends:
+  llamacpp:
+    label: llama.cpp · GGUF Q4_K_M · thinking off
+    base_url: http://127.0.0.1:8080/v1
+    model: qwen3.5-4b
+    extra_body:
+      chat_template_kwargs: {enable_thinking: false}
+
+  # Same weights with reasoning on. Thinking spends thousands of tokens per item, so it
+  # gets a bigger budget (llama.cpp gives each of its 4 slots 8k tokens of context) and
+  # runs only the suites where reasoning should matter.
+  llamacpp-think:
+    label: llama.cpp · GGUF Q4_K_M · thinking on
+    base_url: http://127.0.0.1:8080/v1
+    model: qwen3.5-4b
+    max_tokens: 7168
+    timeout_s: 900
+    suites: [math, reasoning]
+    extra_body:
+      chat_template_kwargs: {enable_thinking: true}
+
+  # Thinking with the sampler the Qwen3.5 model card recommends for thinking mode. Greedy
+  # decoding can trap reasoning in repetition loops; presence_penalty exists to break them.
+  # Sampled results vary between runs: compare several runs before concluding anything.
+  llamacpp-think-sampled:
+    label: llama.cpp · GGUF Q4_K_M · thinking on · model-card sampling
+    base_url: http://127.0.0.1:8080/v1
+    model: qwen3.5-4b
+    max_tokens: 7168
+    temperature: 1.0
+    timeout_s: 900
+    suites: [math]
+    extra_body:
+      chat_template_kwargs: {enable_thinking: true}
+      top_p: 0.95
+      top_k: 20
+      min_p: 0.0
+      presence_penalty: 1.5
+
+  # Quantization comparison: serve another file on another port, e.g.
+  #   LLAMACPP_HF_FILE=Qwen3.5-4B-Q8_0.gguf LLAMACPP_PORT=8082 make serve-llamacpp
+  # llamacpp-q8:
+  #   label: llama.cpp · GGUF Q8_0 · thinking off
+  #   base_url: http://127.0.0.1:8082/v1
+  #   model: qwen3.5-4b
+  #   extra_body:
+  #     chat_template_kwargs: {enable_thinking: false}
+
+  # mlx:
+  #   label: MLX-LM · MLX 4-bit · thinking off
+  #   base_url: http://127.0.0.1:8081/v1
+  #   model: mlx-community/Qwen3.5-4B-MLX-4bit
+  #   extra_body:
+  #     chat_template_kwargs: {enable_thinking: false}
+
+  # ollama-gguf:
+  #   label: Ollama · GGUF Q4_K_M · thinking off
+  #   base_url: http://127.0.0.1:11434/v1
+  #   model: qwen3.5:4b-q4_K_M
+  #   extra_body:
+  #     reasoning_effort: none
+
+  # Through the gateway (`make gateway`): the gateway maps reasoning_effort per engine.
+  # gateway-llamacpp:
+  #   label: gateway → llama.cpp · thinking off
+  #   base_url: http://127.0.0.1:8000/v1
+  #   model: llamacpp
+  #   extra_body:
+  #     reasoning_effort: none

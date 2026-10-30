@@ -11,9 +11,11 @@ the engineering standards of a production system.**
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
 One model (**Qwen3.5-4B**), two weight formats (**GGUF**, **MLX**), three servers
-(**llama.cpp**, **MLX-LM**, **Ollama**) behind one OpenAI-compatible **gateway**, a
-ChatGPT-style **chat UI** with live latency metrics, and the measurement tools that show
-which setup to use and why.
+(**llama.cpp**, **MLX-LM**, **Ollama**) behind one OpenAI-compatible **gateway** with
+admission control and fallback, a ChatGPT-style **chat UI** with live latency metrics, a
+tool-calling **agent harness** and an **eval harness** written from scratch, and a
+**Prometheus + Grafana** stack with SLO alerts. Every claim below is measured, and the
+measurement code is in the repo.
 
 <!-- SCREENSHOT -->
 
@@ -72,6 +74,29 @@ xychart-beta
 More findings, each one a production pitfall with the fix applied here:
 [inference/README.md](inference/README.md#things-that-bite-in-production).
 
+## Results: quality, and what thinking mode actually buys
+
+Speed means nothing without quality. [`llm-evals`](packages/evals) scores the same model
+on 146 original items with programmatic checkers (no LLM judge), and reports 95% Wilson
+intervals. Raw data: [`benchmarks/evals/20261029-211158`](benchmarks/evals/20261029-211158/README.md).
+
+| Suite | n | Thinking off | Thinking on | What it checks |
+|---|---:|---:|---:|---|
+| math | 32 | **97%** (84–99) | 88% (72–95) | Multi-step word problems, exact number |
+| reasoning | 28 | **100%** (88–100) | 93% (77–98) | Logic and common sense, answer letter |
+| json | 24 | 92% (74–98) | | Output valid against a JSON Schema (same with constrained decoding) |
+| tools | 30 | 100% (89–100) | | Right function and arguments, including when not to call one |
+| instructions | 32 | 94% (80–98) | | Verifiable constraints: counts, case, phrases, tables |
+| math: tokens and time per item | | 469 tok · 23 s | 2,710 tok · 132 s | |
+
+- **Thinking mode cost ~6× the tokens and time and gained nothing measurable** (paired
+  McNemar p = 0.38 on math). Seven of eight thinking failures ran out of the 7k-token
+  budget, mostly in greedy repetition loops, sometimes after the right answer had appeared.
+- **Constrained decoding didn't change JSON scores**: prompted output was already 100%
+  schema-valid; the remaining misses are wrong content, which no grammar prevents.
+- **A 4B model is a reliable tool caller**: 30/30 here, and 7/7 multi-step tasks in the
+  [agent harness](packages/agent#results-on-qwen35-4b).
+
 ## What's inside
 
 | | Module | What it does |
@@ -81,10 +106,10 @@ More findings, each one a production pitfall with the fix applied here:
 | ✅ | [`services/gateway`](services/gateway) | One OpenAI-compatible endpoint for every engine: routing, engine-quirk normalization, streaming with cancellation, Prometheus TTFT/TPOT histograms |
 | ✅ | [`ui/`](ui) | ChatGPT-style chat with live per-reply metrics, thinking mode, markdown/code/LaTeX, and an **Arena** that races two engines on the same prompt |
 | ✅ | [`benchmarks/`](benchmarks) | Committed, reproducible results with hardware and server-build metadata |
-| ✅ | [CI](.github/workflows/ci.yml) | Ruff, strict mypy, unit tests, UI typecheck/tests/build, and an **end-to-end benchmark against a real llama.cpp server** on every push |
-| 🔜 | Agent harness | Tool-calling loop from scratch, constrained decoding, sandboxed tools, MCP |
-| 🔜 | Eval harness | Task suites, quantization quality vs speed |
-| 🔜 | Deploy | Docker Compose with Prometheus, Grafana dashboards and alerts |
+| ✅ | [CI](.github/workflows/ci.yml) | Ruff, strict mypy, ~400 tests, UI format/typecheck/tests/build, Docker image build with a smoke test of the whole stack, and **benchmark, evals and agent runs against a real llama.cpp server** on every push |
+| ✅ | [`packages/agent`](packages/agent) | Tool-calling agent loop from scratch: schema generation from typed functions, parallel calls, error recovery, workspace-scoped tools, JSONL traces |
+| ✅ | [`packages/evals`](packages/evals) | Quality evals with programmatic scoring, Wilson intervals and paired McNemar tests; thinking on/off, constrained vs prompted JSON |
+| ✅ | [`deploy/`](deploy) | Docker Compose: hardened gateway image, Prometheus, a 33-panel Grafana dashboard, burn-rate SLO alerts with promtool unit tests |
 | 🔜 | RAG | Local embeddings, vector search, reranking |
 
 Architecture: [docs/architecture.md](docs/architecture.md) · design decisions:
@@ -119,6 +144,14 @@ make fetch-models       # same model as GGUF, MLX and Ollama builds
 make bench              # start each engine, measure it, stop it, merge the report
 ```
 
+Agents, evals and the monitoring stack:
+
+```bash
+make agent TASK="Write notes.md with three facts about Mars, then count its words"
+make evals              # quality of every backend in configs/evals.yaml
+make up                 # gateway + Prometheus + Grafana in Docker (http://127.0.0.1:3300)
+```
+
 Use the gateway from any OpenAI client:
 
 ```python
@@ -151,11 +184,14 @@ Details: [llm-bench methodology](packages/llm-bench/README.md#methodology).
 ```
 ├── configs/              # benchmark matrix and gateway backends (YAML)
 ├── inference/scripts/    # serve-*.sh, fetch-models.sh, bench-all.sh
-├── packages/llm-bench/   # benchmark CLI (Python, fully typed, tested)
+├── packages/llm-bench/   # load generator and latency profiler
+├── packages/agent/       # tool-calling agent harness
+├── packages/evals/       # quality eval harness and suites
 ├── services/gateway/     # OpenAI-compatible gateway (FastAPI)
 ├── ui/                   # chat UI (React 19, TypeScript, Vite, Tailwind)
-├── benchmarks/results/   # committed runs: raw JSON + Markdown tables
-├── docs/                 # architecture, roadmap
+├── deploy/               # Docker Compose, Prometheus, Grafana, alert rules
+├── benchmarks/           # committed speed and quality results
+├── docs/                 # architecture, ADRs, roadmap, learning guide
 └── .github/workflows/    # CI incl. end-to-end test on a real server
 ```
 

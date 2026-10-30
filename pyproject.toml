@@ -17,10 +17,14 @@ members = ["packages/*", "services/*"]
 [tool.uv.sources]
 llm-bench = { workspace = true }
 llm-gateway = { workspace = true }
+llm-agent = { workspace = true }
+llm-evals = { workspace = true }
 
 [dependency-groups]
 dev = [
+    "llm-agent",
     "llm-bench",
+    "llm-evals",
     "llm-gateway",
     "mypy>=1.13",
     "pre-commit>=4.0",
@@ -28,6 +32,7 @@ dev = [
     "pytest-asyncio>=0.24",
     "ruff>=0.8",
     "types-PyYAML>=6.0",
+    "types-jsonschema>=4.23",
 ]
 
 [tool.ruff]
@@ -41,7 +46,12 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "ASYNC", "PT", "C4", "PTH
 python_version = "3.12"
 strict = true
 warn_unreachable = true
-mypy_path = ["packages/llm-bench/src", "services/gateway/src"]
+mypy_path = [
+    "packages/agent/src",
+    "packages/evals/src",
+    "packages/llm-bench/src",
+    "services/gateway/src",
+]
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib -ra"

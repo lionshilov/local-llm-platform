@@ -1,0 +1,701 @@
+# Original structured-output tasks: extraction, transformation, light computation and free
+# generation, each with a JSON Schema. Every item is run twice: prompted (schema in the
+# prompt only) and constrained (also sent as response_format, i.e. grammar decoding).
+#
+# `expected` pins facts the input determines (JSON Pointer -> value or matcher), so a
+# schema-valid but wrong answer still fails. `reference` is a correct answer; the test
+# suite checks that it passes, which proves every item is satisfiable.
+
+name: json
+kind: json
+description: JSON that parses, validates against a given JSON Schema and has the right values.
+
+items:
+  - id: json-01
+    task: |-
+      Extract the contact details from this email signature:
+
+      Best regards,
+      Dr. Helena Voss
+      Head of Research, Nordlicht Labs
+      +49 30 5550 1234 · h.voss@nordlicht.example
+    json_schema:
+      type: object
+      properties:
+        name: {type: string}
+        job_title: {type: string}
+        company: {type: string}
+        phone: {type: string}
+        email: {type: string}
+      required: [name, job_title, company, phone, email]
+      additionalProperties: false
+    expected:
+      /name: {$contains: Helena Voss}
+      /job_title: {$contains: Head of Research}
+      /company: Nordlicht Labs
+      /email: h.voss@nordlicht.example
+    reference:
+      name: Dr. Helena Voss
+      job_title: Head of Research
+      company: Nordlicht Labs
+      phone: "+49 30 5550 1234"
+      email: h.voss@nordlicht.example
+
+  - id: json-02
+    task: >-
+      Turn this order into structured data and compute the order total: 3 × USB-C cable at
+      €9.99 each, 1 × laptop stand at €34.50, 2 × HDMI adapter at €12.00 each.
+    json_schema:
+      type: object
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            properties:
+              name: {type: string}
+              quantity: {type: integer, minimum: 1}
+              unit_price: {type: number}
+            required: [name, quantity, unit_price]
+            additionalProperties: false
+        total: {type: number}
+      required: [items, total]
+      additionalProperties: false
+    expected:
+      /items: {$length: 3}
+      /items/0/quantity: 3
+      /items/0/unit_price: 9.99
+      /total: 88.47
+    reference:
+      items:
+        - {name: USB-C cable, quantity: 3, unit_price: 9.99}
+        - {name: Laptop stand, quantity: 1, unit_price: 34.5}
+        - {name: HDMI adapter, quantity: 2, unit_price: 12.0}
+      total: 88.47
+
+  - id: json-03
+    task: |-
+      Triage this support ticket:
+
+      "The app crashes every time I try to upload a profile photo on my Android 14 phone.
+      It started right after yesterday's update."
+    json_schema:
+      type: object
+      properties:
+        category: {type: string, enum: [billing, bug, feature_request, account, other]}
+        severity: {type: string, enum: [low, medium, high, critical]}
+        platform: {type: string, enum: [android, ios, web, desktop, unknown]}
+        summary: {type: string, maxLength: 120}
+      required: [category, severity, platform, summary]
+      additionalProperties: false
+    expected:
+      /category: bug
+      /platform: android
+    reference:
+      category: bug
+      severity: high
+      platform: android
+      summary: App crashes when uploading a profile photo on Android 14 since the latest update.
+
+  - id: json-04
+    task: |-
+      Analyze this product review:
+
+      "Battery life is fantastic and the screen is sharp, but the speakers sound tinny and
+      it gets uncomfortably hot when gaming."
+    json_schema:
+      type: object
+      properties:
+        sentiment: {type: string, enum: [positive, negative, mixed]}
+        pros: {type: array, items: {type: string}, minItems: 1}
+        cons: {type: array, items: {type: string}, minItems: 1}
+      required: [sentiment, pros, cons]
+      additionalProperties: false
+    expected:
+      /sentiment: mixed
+      /pros: {$length: 2}
+      /cons: {$length: 2}
+    reference:
+      sentiment: mixed
+      pros: [Fantastic battery life, Sharp screen]
+      cons: [Tinny speakers, Gets hot when gaming]
+
+  - id: json-05
+    task: |-
+      Extract the event details from this announcement:
+
+      "Join us for the Riverside Book Fair on Saturday, 14 June 2025, from 10:00 to 16:30
+      at Elm Park. Entry is free."
+    json_schema:
+      type: object
+      properties:
+        name: {type: string}
+        date: {type: string, pattern: '^\d{4}-\d{2}-\d{2}$', description: YYYY-MM-DD}
+        start_time: {type: string, pattern: '^\d{2}:\d{2}$', description: "HH:MM, 24-hour"}
+        end_time: {type: string, pattern: '^\d{2}:\d{2}$', description: "HH:MM, 24-hour"}
+        location: {type: string}
+        free_entry: {type: boolean}
+      required: [name, date, start_time, end_time, location, free_entry]
+      additionalProperties: false
+    expected:
+      /date: "2025-06-14"
+      /start_time: "10:00"
+      /end_time: "16:30"
+      /location: {$contains: Elm Park}
+      /free_entry: true
+    reference:
+      name: Riverside Book Fair
+      date: "2025-06-14"
+      start_time: "10:00"
+      end_time: "16:30"
+      location: Elm Park
+      free_entry: true
+
+  - id: json-06
+    task: >-
+      Write a three-question multiple-choice quiz about the solar system. Each question has
+      exactly four options.
+    json_schema:
+      type: object
+      properties:
+        title: {type: string}
+        questions:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            type: object
+            properties:
+              question: {type: string}
+              options: {type: array, items: {type: string}, minItems: 4, maxItems: 4}
+              answer_index: {type: integer, minimum: 0, maximum: 3}
+            required: [question, options, answer_index]
+            additionalProperties: false
+      required: [title, questions]
+      additionalProperties: false
+    reference:
+      title: Solar System Quiz
+      questions:
+        - question: Which planet is closest to the Sun?
+          options: [Venus, Mercury, Earth, Mars]
+          answer_index: 1
+        - question: Which planet is the largest?
+          options: [Saturn, Neptune, Jupiter, Uranus]
+          answer_index: 2
+        - question: Which planet is known as the Red Planet?
+          options: [Mars, Venus, Mercury, Jupiter]
+          answer_index: 0
+
+  - id: json-07
+    task: |-
+      Convert this recipe note into structured data:
+
+      "Pancakes (serves 4): 200 g flour, 2 eggs, 300 ml milk, 1 tbsp sugar."
+    json_schema:
+      type: object
+      properties:
+        title: {type: string}
+        servings: {type: integer}
+        ingredients:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            properties:
+              name: {type: string}
+              quantity: {type: number}
+              unit: {type: [string, "null"]}
+            required: [name, quantity, unit]
+            additionalProperties: false
+      required: [title, servings, ingredients]
+      additionalProperties: false
+    expected:
+      /servings: 4
+      /ingredients: {$length: 4}
+      /ingredients/0/quantity: 200
+      /ingredients/0/unit: {$any_of: [g, gram, grams]}
+      /ingredients/2/quantity: 300
+    reference:
+      title: Pancakes
+      servings: 4
+      ingredients:
+        - {name: flour, quantity: 200, unit: g}
+        - {name: eggs, quantity: 2, unit: null}
+        - {name: milk, quantity: 300, unit: ml}
+        - {name: sugar, quantity: 1, unit: tbsp}
+
+  - id: json-08
+    task: >-
+      Write the configuration for a web service named orders-api. It listens on port 8080
+      and runs 2 replicas. Set the environment variables LOG_LEVEL to info and REGION to
+      eu-west-1. The health check calls /healthz every 10 seconds.
+    json_schema:
+      type: object
+      properties:
+        service:
+          type: object
+          properties:
+            name: {type: string}
+            port: {type: integer, minimum: 1, maximum: 65535}
+            replicas: {type: integer, minimum: 1}
+          required: [name, port, replicas]
+          additionalProperties: false
+        env:
+          type: object
+          additionalProperties: {type: string}
+        health_check:
+          type: object
+          properties:
+            path: {type: string}
+            interval_seconds: {type: integer, minimum: 1}
+          required: [path, interval_seconds]
+          additionalProperties: false
+      required: [service, env, health_check]
+      additionalProperties: false
+    expected:
+      /service/name: orders-api
+      /service/port: 8080
+      /service/replicas: 2
+      /env/LOG_LEVEL: info
+      /env/REGION: eu-west-1
+      /health_check/path: /healthz
+      /health_check/interval_seconds: 10
+    reference:
+      service: {name: orders-api, port: 8080, replicas: 2}
+      env: {LOG_LEVEL: info, REGION: eu-west-1}
+      health_check: {path: /healthz, interval_seconds: 10}
+
+  - id: json-09
+    task: |-
+      Convert this table to JSON and add the average salary of the Engineering department:
+
+      Name  | Department  | Salary
+      Alice | Engineering | 120000
+      Bob   | Sales       | 95000
+      Cara  | Engineering | 130000
+    json_schema:
+      type: object
+      properties:
+        employees:
+          type: array
+          items:
+            type: object
+            properties:
+              name: {type: string}
+              department: {type: string}
+              salary: {type: integer}
+            required: [name, department, salary]
+            additionalProperties: false
+        engineering_average_salary: {type: number}
+      required: [employees, engineering_average_salary]
+      additionalProperties: false
+    expected:
+      /employees: {$length: 3}
+      /employees/2/salary: 130000
+      /engineering_average_salary: 125000
+    reference:
+      employees:
+        - {name: Alice, department: Engineering, salary: 120000}
+        - {name: Bob, department: Sales, salary: 95000}
+        - {name: Cara, department: Engineering, salary: 130000}
+      engineering_average_salary: 125000
+
+  - id: json-10
+    task: |-
+      Today is 2025-03-10. A task is overdue if its due date is before today. Which of these
+      tasks are overdue?
+
+      - Write report (due 2025-03-08)
+      - Book venue (due 2025-03-12)
+      - Pay invoice (due 2025-03-01)
+      - Call supplier (due 2025-03-10)
+    json_schema:
+      type: object
+      properties:
+        overdue: {type: array, items: {type: string}}
+        count: {type: integer, minimum: 0}
+      required: [overdue, count]
+      additionalProperties: false
+    expected:  # copying the due date along with the name is fine
+      /overdue: [{$contains: Write report}, {$contains: Pay invoice}]
+      /count: 2
+    reference:
+      overdue: [Write report, Pay invoice]
+      count: 2
+
+  - id: json-11
+    task: |-
+      Parse this postal address:
+
+      "Flat 4B, 221 Harbour Street, Leith, Edinburgh EH6 6QW, United Kingdom"
+    json_schema:
+      type: object
+      properties:
+        unit: {type: [string, "null"]}
+        street: {type: string}
+        district: {type: [string, "null"]}
+        city: {type: string}
+        postcode: {type: string}
+        country: {type: string}
+      required: [unit, street, district, city, postcode, country]
+      additionalProperties: false
+    expected:
+      /street: {$contains: 221 Harbour Street}
+      /city: Edinburgh
+      /postcode: EH6 6QW
+      /country: {$any_of: [United Kingdom, UK]}
+    reference:
+      unit: Flat 4B
+      street: 221 Harbour Street
+      district: Leith
+      city: Edinburgh
+      postcode: EH6 6QW
+      country: United Kingdom
+
+  - id: json-12
+    task: >-
+      Alice is free from 09:00 to 11:00 and from 14:00 to 16:00. Bob is free from 10:00 to
+      12:00 and from 15:00 to 17:00. List every time window when both are free.
+    json_schema:
+      type: object
+      properties:
+        windows:
+          type: array
+          items:
+            type: object
+            properties:
+              start: {type: string, pattern: '^\d{2}:\d{2}$'}
+              end: {type: string, pattern: '^\d{2}:\d{2}$'}
+            required: [start, end]
+            additionalProperties: false
+      required: [windows]
+      additionalProperties: false
+    expected:
+      /windows:
+        - {start: "10:00", end: "11:00"}
+        - {start: "15:00", end: "16:00"}
+    reference:
+      windows:
+        - {start: "10:00", end: "11:00"}
+        - {start: "15:00", end: "16:00"}
+
+  - id: json-13
+    task: |-
+      Describe the signature of this Python function:
+
+      def add_tax(price: float, rate: float = 0.2, *, round_to: int | None = None) -> float:
+          ...
+    json_schema:
+      type: object
+      properties:
+        name: {type: string}
+        parameters:
+          type: array
+          items:
+            type: object
+            properties:
+              name: {type: string}
+              annotation: {type: string}
+              required: {type: boolean, description: True if the caller must pass it.}
+            required: [name, annotation, required]
+            additionalProperties: false
+        return_annotation: {type: string}
+      required: [name, parameters, return_annotation]
+      additionalProperties: false
+    expected:
+      /name: add_tax
+      /parameters: {$length: 3}
+      /parameters/0/required: true
+      /parameters/1/name: rate
+      /parameters/1/required: false
+      /parameters/2/required: false
+      /return_annotation: float
+    reference:
+      name: add_tax
+      parameters:
+        - {name: price, annotation: float, required: true}
+        - {name: rate, annotation: float, required: false}
+        - {name: round_to, annotation: int | None, required: false}
+      return_annotation: float
+
+  - id: json-14
+    task: |-
+      List the people mentioned in this text and their roles:
+
+      "The project is led by Marta Kowalski, with Diego Ruiz as tech lead and Yuki Tanaka
+      handling QA. Samir Haddad joined last week as a designer."
+    json_schema:
+      type: object
+      properties:
+        people:
+          type: array
+          items:
+            type: object
+            properties:
+              name: {type: string}
+              role: {type: string}
+            required: [name, role]
+            additionalProperties: false
+      required: [people]
+      additionalProperties: false
+    expected:
+      /people: {$length: 4}
+      /people/0/name: Marta Kowalski
+      /people/3/name: Samir Haddad
+    reference:
+      people:
+        - {name: Marta Kowalski, role: project lead}
+        - {name: Diego Ruiz, role: tech lead}
+        - {name: Yuki Tanaka, role: QA}
+        - {name: Samir Haddad, role: designer}
+
+  - id: json-15
+    task: >-
+      Convert these temperatures from Fahrenheit to Celsius, rounded to one decimal place:
+      32, 98.6, 212, -40.
+    json_schema:
+      type: object
+      properties:
+        conversions:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            type: object
+            properties:
+              fahrenheit: {type: number}
+              celsius: {type: number}
+            required: [fahrenheit, celsius]
+            additionalProperties: false
+      required: [conversions]
+      additionalProperties: false
+    expected:
+      /conversions/0/celsius: 0
+      /conversions/1/celsius: 37
+      /conversions/2/celsius: 100
+      /conversions/3/celsius: -40
+    reference:
+      conversions:
+        - {fahrenheit: 32, celsius: 0.0}
+        - {fahrenheit: 98.6, celsius: 37.0}
+        - {fahrenheit: 212, celsius: 100.0}
+        - {fahrenheit: -40, celsius: -40.0}
+
+  - id: json-16
+    task: >-
+      An API client sends a request that creates a new user account, and the server creates
+      the account successfully. Describe the HTTP request method and the response.
+    json_schema:
+      type: object
+      properties:
+        method: {type: string, enum: [GET, POST, PUT, PATCH, DELETE]}
+        status_code: {type: integer, minimum: 100, maximum: 599}
+        success: {type: boolean}
+      required: [method, status_code, success]
+      additionalProperties: false
+    expected:
+      /method: POST
+      /status_code: {$any_of: [201, 200]}
+      /success: true
+    reference: {method: POST, status_code: 201, success: true}
+
+  - id: json-17
+    task: >-
+      Create a password policy that requires at least 12 characters, at least one digit and
+      at least one symbol, does not require uppercase letters, and makes passwords expire
+      after 90 days.
+    json_schema:
+      type: object
+      properties:
+        min_length: {type: integer, minimum: 8, maximum: 128}
+        require_digit: {type: boolean}
+        require_symbol: {type: boolean}
+        require_uppercase: {type: boolean}
+        expiry_days: {type: integer, minimum: 1}
+      required: [min_length, require_digit, require_symbol, require_uppercase, expiry_days]
+      additionalProperties: false
+    expected:
+      /min_length: 12
+      /require_digit: true
+      /require_symbol: true
+      /require_uppercase: false
+      /expiry_days: 90
+    reference:
+      min_length: 12
+      require_digit: true
+      require_symbol: true
+      require_uppercase: false
+      expiry_days: 90
+
+  - id: json-18
+    task: >-
+      Plan a three-day sightseeing itinerary for Lisbon with one activity each morning,
+      afternoon and evening.
+    json_schema:
+      type: object
+      properties:
+        city: {type: string}
+        days:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            type: object
+            properties:
+              day: {type: integer, minimum: 1, maximum: 3}
+              morning: {type: string}
+              afternoon: {type: string}
+              evening: {type: string}
+            required: [day, morning, afternoon, evening]
+            additionalProperties: false
+      required: [city, days]
+      additionalProperties: false
+    expected:
+      /city: Lisbon
+      /days/0/day: 1
+      /days/2/day: 3
+    reference:
+      city: Lisbon
+      days:
+        - {day: 1, morning: Belém Tower, afternoon: Jerónimos Monastery, evening: Fado in Alfama}
+        - {day: 2, morning: São Jorge Castle, afternoon: Tram 28, evening: Bairro Alto}
+        - {day: 3, morning: Sintra day trip, afternoon: Pena Palace, evening: Time Out Market}
+
+  - id: json-19
+    task: >-
+      Write a short marketplace listing for a 750 ml stainless steel water bottle priced at
+      $24.99.
+    json_schema:
+      type: object
+      properties:
+        title: {type: string, maxLength: 60}
+        price_usd: {type: number, exclusiveMinimum: 0}
+        capacity_ml: {type: integer}
+        tags: {type: array, items: {type: string}, minItems: 3, maxItems: 5}
+        in_stock: {type: boolean}
+      required: [title, price_usd, capacity_ml, tags, in_stock]
+      additionalProperties: false
+    expected:
+      /price_usd: 24.99
+      /capacity_ml: 750
+    reference:
+      title: 750 ml Stainless Steel Water Bottle
+      price_usd: 24.99
+      capacity_ml: 750
+      tags: [water bottle, stainless steel, reusable]
+      in_stock: true
+
+  - id: json-20
+    task: >-
+      Normalize these US phone numbers to E.164 format (+1 followed by ten digits):
+      (415) 555-0132, 415.555.0199, 1-415-555-0175.
+    json_schema:
+      type: object
+      properties:
+        numbers:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items: {type: string, pattern: '^\+1\d{10}$'}
+      required: [numbers]
+      additionalProperties: false
+    expected:
+      /numbers: ["+14155550132", "+14155550199", "+14155550175"]
+    reference:
+      numbers: ["+14155550132", "+14155550199", "+14155550175"]
+
+  - id: json-21
+    task: A rectangle is 7.5 m long and 4 m wide. Give its area and its perimeter.
+    json_schema:
+      type: object
+      properties:
+        area_m2: {type: number}
+        perimeter_m: {type: number}
+      required: [area_m2, perimeter_m]
+      additionalProperties: false
+    expected:
+      /area_m2: 30
+      /perimeter_m: 23
+    reference: {area_m2: 30, perimeter_m: 23}
+
+  - id: json-22
+    task: >-
+      Is 221 a prime number? If it is not, give its smallest prime factor; if it is, set
+      the factor to null.
+    json_schema:
+      type: object
+      properties:
+        is_prime: {type: boolean}
+        smallest_prime_factor: {type: [integer, "null"]}
+      required: [is_prime, smallest_prime_factor]
+      additionalProperties: false
+    expected:
+      /is_prime: false
+      /smallest_prime_factor: 13
+    reference: {is_prime: false, smallest_prime_factor: 13}
+
+  - id: json-23
+    task: |-
+      Parse this log line:
+
+      2025-02-11T08:15:42Z ERROR payment-service [req=7f3a9c] Timeout after 3000 ms calling bank-gateway
+    json_schema:
+      type: object
+      properties:
+        timestamp: {type: string}
+        level: {type: string, enum: [DEBUG, INFO, WARN, ERROR]}
+        service: {type: string}
+        request_id: {type: string}
+        message: {type: string}
+        duration_ms: {type: [integer, "null"]}
+      required: [timestamp, level, service, request_id, message, duration_ms]
+      additionalProperties: false
+    expected:
+      /timestamp: "2025-02-11T08:15:42Z"
+      /level: ERROR
+      /service: payment-service
+      /request_id: 7f3a9c
+      /duration_ms: 3000
+    reference:
+      timestamp: "2025-02-11T08:15:42Z"
+      level: ERROR
+      service: payment-service
+      request_id: 7f3a9c
+      message: Timeout after 3000 ms calling bank-gateway
+      duration_ms: 3000
+
+  - id: json-24
+    task: >-
+      Classify each of these animals as a mammal, bird, reptile, amphibian or fish:
+      dolphin, penguin, frog, shark, gecko.
+    json_schema:
+      type: object
+      properties:
+        animals:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items:
+            type: object
+            properties:
+              name: {type: string}
+              class: {type: string, enum: [mammal, bird, reptile, amphibian, fish]}
+            required: [name, class]
+            additionalProperties: false
+      required: [animals]
+      additionalProperties: false
+    expected:
+      /animals:
+        - {name: dolphin, class: mammal}
+        - {name: penguin, class: bird}
+        - {name: frog, class: amphibian}
+        - {name: shark, class: fish}
+        - {name: gecko, class: reptile}
+    reference:
+      animals:
+        - {name: dolphin, class: mammal}
+        - {name: penguin, class: bird}
+        - {name: frog, class: amphibian}
+        - {name: shark, class: fish}
+        - {name: gecko, class: reptile}

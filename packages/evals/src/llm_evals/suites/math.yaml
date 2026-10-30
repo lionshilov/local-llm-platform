@@ -1,0 +1,211 @@
+# Original grade-school word problems (not taken from GSM8K or any other dataset).
+# Every answer was checked with exact rational arithmetic. Several items contain a classic
+# trap: fence-posts (math-30), averaging speeds (math-18), "hour or part of an hour"
+# (math-21), percentage up-then-down (math-28). Two are classic archetypes with new numbers:
+# heads and legs (math-11) and the snail in a well (math-26).
+
+name: math
+kind: math
+description: Multi-step arithmetic word problems with one exact numeric answer.
+
+items:
+  - id: math-01
+    question: >-
+      A bakery sells muffins for $3 each and cookies for $1.25 each. Maya buys 4 muffins
+      and 6 cookies and pays with a $20 bill. How much change does she receive, in dollars?
+    answer: 0.5
+
+  - id: math-02
+    question: >-
+      A train leaves at 9:40 and arrives at 13:15 the same day. The return trip takes
+      25 minutes longer than the outbound trip. How many minutes does the return trip take?
+    answer: 240
+
+  - id: math-03
+    question: >-
+      A school has three classes of 28 students and two classes of 31 students. Each bus
+      holds at most 40 students. Classes do not need to stay together: any student can ride
+      on any bus. What is the smallest number of buses needed to take all the students on a
+      trip?
+    answer: 4
+
+  - id: math-04
+    question: >-
+      A recipe needs 2/3 of a cup of sugar per batch. Leo has 5 cups of sugar. How many
+      complete batches can he make?
+    answer: 7
+
+  - id: math-05
+    question: >-
+      A jacket costs $40. The store takes 25% off, and then a coupon takes a further 10%
+      off the discounted price. What is the final price in dollars?
+    answer: 27
+
+  - id: math-06
+    question: >-
+      A rectangular garden is 18 m long and 12 m wide. A path 1 m wide runs all the way
+      around the outside of the garden. What is the area of the path in square meters?
+    answer: 64
+
+  - id: math-07
+    question: >-
+      Tom is 4 times as old as his daughter. In 20 years, he will be twice as old as she
+      will be then. How old is Tom now?
+    answer: 40
+
+  - id: math-08
+    question: >-
+      A phone plan costs $15 per month plus $0.10 for every text message beyond the first
+      200 in that month. In March, Ana sent 340 text messages. What was her bill for March,
+      in dollars?
+    answer: 29
+
+  - id: math-09
+    question: >-
+      Three friends share a restaurant bill. The food costs $84, and they add an 18% tip
+      calculated on the food cost. They split the total equally. How much does each person
+      pay, in dollars?
+    answer: 33.04
+
+  - id: math-10
+    question: >-
+      A car uses 6.5 liters of fuel per 100 km. Fuel costs $1.80 per liter. How much does
+      the fuel cost, in dollars, for a 340 km trip?
+    answer: 39.78
+
+  - id: math-11
+    question: >-
+      A farmer keeps only chickens and cows. Together they have 30 heads and 74 legs. How
+      many cows are there?
+    answer: 7
+
+  - id: math-12
+    question: >-
+      A class of 40 students is 60% girls. Three quarters of the girls and half of the boys
+      join the chess club. How many students from the class join the chess club?
+    answer: 26
+
+  - id: math-13
+    question: >-
+      A shop sells pencils in packs of 12 for $3.60, or individually for $0.35 each. What is
+      the lowest total cost, in dollars, to buy exactly 30 pencils?
+    answer: 9.3
+
+  - id: math-14
+    question: >-
+      A runner completes each 400 m lap in 72 seconds. At the same pace, how many minutes
+      does she need to run 10 km?
+    answer: 30
+
+  - id: math-15
+    question: >-
+      Ben saves $5 in the first week. Each week after that, he saves $3 more than he did the
+      week before. How many dollars has he saved in total after 10 weeks?
+    answer: 185
+
+  - id: math-16
+    question: >-
+      A printer prints 18 pages per minute. A 450-page job starts at 10:00, and halfway
+      through, the printer stops for 7 minutes while paper is refilled. How many minutes
+      after 10:00 does the job finish?
+    answer: 32
+
+  - id: math-17
+    question: >-
+      A box holds red, blue and green marbles in the ratio 3 : 5 : 4. There are 20 more
+      blue marbles than red marbles. How many marbles are in the box altogether?
+    answer: 120
+
+  - id: math-18
+    question: >-
+      A cyclist rides 30 km at 15 km/h and then another 30 km at 30 km/h. What is her
+      average speed over the whole 60 km, in km/h?
+    answer: 20
+
+  - id: math-19
+    question: >-
+      A company's revenue was $250,000 last year and grew by 12% this year. This year's
+      costs are $210,000. What is this year's profit in dollars?
+    answer: 70000
+
+  - id: math-20
+    question: >-
+      Lina is 3 years older than Omar. Omar is twice as old as Kai. Their three ages add up
+      to 38. How old is Lina?
+    answer: 17
+
+  - id: math-21
+    question: >-
+      A parking garage charges $4 for the first hour and $2.50 for each additional hour or
+      part of an hour. How much does it cost, in dollars, to park for 4 hours and 20 minutes?
+    answer: 14
+
+  - id: math-22
+    question: >-
+      A cinema has 18 rows of 24 seats. For one screening, 5/8 of the seats were sold at
+      $12 each. How much money, in dollars, did the cinema take for that screening?
+    answer: 3240
+
+  - id: math-23
+    question: >-
+      A worker earns $22 per hour for the first 40 hours in a week and 1.5 times that rate
+      for every hour beyond 40. Last week she worked 47 hours. How much did she earn, in
+      dollars?
+    answer: 1111
+
+  - id: math-24
+    question: >-
+      A clock that runs fast, gaining 4 minutes every hour, is set to the correct time at
+      8:00 AM. Later the same day it shows 2:24 PM. How many minutes have actually passed
+      since 8:00 AM?
+    answer: 360
+
+  - id: math-25
+    question: >-
+      A bookshop buys books for $8 each and sells them for $13 each. Its fixed costs are
+      $1,500 per month. How many books must it sell in a month to make a profit of at
+      least $1,000?
+    answer: 500
+
+  - id: math-26
+    question: >-
+      A snail is at the bottom of a 20 m well. Each day it climbs up 3 m, and each night it
+      slides back down 2 m. On which day does it first reach the top?
+    answer: 18
+
+  - id: math-27
+    question: >-
+      Jamal has twice as many stamps as Rosa. After Jamal gives Rosa 15 stamps, they have
+      the same number. How many stamps do they have together?
+    answer: 90
+
+  - id: math-28
+    question: >-
+      A shop raises the price of a lamp by 20%. A month later it lowers the new price by
+      20%, and the lamp now costs $96. What was the original price, in dollars?
+    answer: 100
+
+  - id: math-29
+    question: >-
+      Three painters, all working at the same rate, can paint a fence in 12 hours. They
+      start together, and after 4 hours two more painters who work at the same rate join
+      them. How many hours does the whole job take from the start?
+    answer: 8.8
+
+  - id: math-30
+    question: >-
+      A bus leaves a station every 15 minutes, starting at 6:05 AM. The last bus of the day
+      leaves at 9:50 PM. How many buses leave the station that day?
+    answer: 64
+
+  - id: math-31
+    question: >-
+      Mira scored 78, 85 and 91 on her first three tests. What score does she need on the
+      fourth test to average exactly 86 across all four tests?
+    answer: 90
+
+  - id: math-32
+    question: >-
+      A 34 m rope is cut into two pieces. One piece is 4 m longer than twice the other.
+      How long is the longer piece, in meters?
+    answer: 24

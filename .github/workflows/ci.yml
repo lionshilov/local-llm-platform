@@ -28,7 +28,7 @@ jobs:
       - name: Ruff lint
         run: uv run ruff check --output-format=github .
       - name: Mypy (strict)
-        run: uv run mypy packages/llm-bench/src services/gateway/src
+        run: uv run mypy packages/llm-bench/src packages/agent/src packages/evals/src services/gateway/src
       - name: Pytest
         run: uv run pytest
       - name: Shellcheck
@@ -53,6 +53,40 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  deploy:
+    name: Container image and observability stack
+    runs-on: ubuntu-latest
+    needs: checks
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Build the gateway image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/gateway.Dockerfile
+          tags: local-llm/gateway:dev
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Validate compose, Prometheus config and alert rule tests
+        run: make deploy-check
+      - name: Smoke-test the stack
+        run: |
+          docker compose -f deploy/compose.yaml up -d --wait --no-build
+          curl -fsS http://127.0.0.1:8100/healthz
+          curl -fsS http://127.0.0.1:8100/ | grep -q '<div id="root">'
+          gateway_up='.data.activeTargets[] | select(.labels.job == "gateway") | .health == "up"'
+          for _ in $(seq 1 20); do  # first scrape happens within a few seconds of startup
+            curl -fsS http://127.0.0.1:9090/api/v1/targets | jq -e "$gateway_up" > /dev/null && break
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:9090/api/v1/targets | jq -e "$gateway_up"
+          curl -fsS http://127.0.0.1:3300/api/search | jq -e 'map(.uid) | index("llm-gateway") != null'
+      - name: Stack logs
+        if: failure()
+        run: docker compose -f deploy/compose.yaml logs
+
   e2e:
     name: End-to-end against a real llama.cpp server
     runs-on: ubuntu-latest
@@ -60,6 +94,7 @@ jobs:
     env:
       MODEL_URL: https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/resolve/main/Qwen3.5-0.8B-Q4_0.gguf
       MODEL_FILE: models/Qwen3.5-0.8B-Q4_0.gguf
+      COLUMNS: "160"  # wider Rich tables in the logs
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.3
@@ -84,7 +119,7 @@ jobs:
           docker run -d --name llama -p 8080:8080 -v "$PWD/models:/models:ro" \
             ghcr.io/ggml-org/llama.cpp:server \
             -m "/$MODEL_FILE" --alias qwen3.5-0.8b \
-            --host 0.0.0.0 --port 8080 --ctx-size 4096 --parallel 2
+            --host 0.0.0.0 --port 8080 --ctx-size 8192 --parallel 2
           for _ in $(seq 1 120); do
             curl -sf http://127.0.0.1:8080/v1/models > /dev/null && exit 0
             sleep 2
@@ -95,13 +130,26 @@ jobs:
       - name: Benchmark
         run: uv run llm-bench run -c configs/ci.yaml --output-dir results --fail-on-error
 
-      - name: Publish report to job summary
+      - name: Eval harness
+        run: uv run llm-evals run -c configs/ci-evals.yaml --limit 2 --output-dir eval-results --fail-on-error
+
+      - name: Agent harness
+        continue-on-error: true  # tool calling on a 0.8B CPU model is best effort
+        run: >-
+          uv run llm-agent run "What is 17 * 23? Use the calculator."
+          --base-url http://127.0.0.1:8080/v1 --model qwen3.5-0.8b --tools calculator --max-steps 4
+
+      - name: Publish reports to job summary
         if: always()
         run: |
           shopt -s nullglob
-          files=(results/*.json)
-          if (( ${#files[@]} )); then
-            uv run llm-bench report "${files[@]}" --format markdown >> "$GITHUB_STEP_SUMMARY"
+          bench=(results/*.json)
+          if (( ${#bench[@]} )); then
+            uv run llm-bench report "${bench[@]}" --format markdown >> "$GITHUB_STEP_SUMMARY"
+          fi
+          evals=(eval-results/*.json)
+          if (( ${#evals[@]} )); then
+            uv run llm-evals report "${evals[@]}" --format markdown >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Server logs

@@ -11,9 +11,11 @@ make install   # uv sync + pre-commit hooks
 make check     # exactly what CI runs: format, lint, strict mypy, tests
 ```
 
-The unit tests use an in-process fake OpenAI server (`llm_bench.testing.FakeServer`), so
-they need no model and run in under a second. CI additionally runs an end-to-end benchmark
-against a real llama.cpp server with a 0.8B model.
+The unit tests use in-process fake OpenAI servers (`llm_bench.testing.FakeServer` for
+streaming, `llm_agent.testing.ScriptedServer` for scripted tool-calling conversations), so
+they need no model and the whole suite runs in seconds. CI additionally runs the
+benchmark, the eval harness and the agent against a real llama.cpp server with a 0.8B
+model, and smoke-tests the Docker Compose stack.
 
 ## Conventions
 

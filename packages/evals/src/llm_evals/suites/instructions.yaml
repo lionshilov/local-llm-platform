@@ -1,0 +1,392 @@
+# Original verifiable-instruction items in the spirit of IFEval (no prompts copied).
+# The prompt is `task` followed by each instruction's own sentence (see
+# scoring/instructions.py), so the text asked for and the code that checks it cannot drift.
+# `reference` is a response that passes every check; the test suite verifies this, which
+# guarantees no item combines contradictory instructions.
+
+name: instructions
+kind: instructions
+description: Verifiable formatting and content constraints, checked in code.
+
+items:
+  - id: if-01
+    task: Give some tips for staying focused while working from home.
+    instructions:
+      - {type: bullet_points, n: 4}
+      - {type: lowercase}
+    reference: |-
+      - keep a fixed start time every morning
+      - work from a desk that is only used for work
+      - silence notifications during deep work
+      - take a short walk at lunch
+
+  - id: if-02
+    task: Explain what a hash table is.
+    instructions:
+      - {type: max_words, n: 50}
+      - {type: no_commas}
+      - {type: quoted}
+    reference: |-
+      "A hash table stores key and value pairs. It runs each key through a hash function to
+      pick a slot in an array so lookups take constant time on average. Collisions are
+      handled with chaining or open addressing."
+
+  - id: if-03
+    task: Compare Python, JavaScript and Go as first programming languages.
+    instructions:
+      - {type: markdown_table, rows: 3, columns: 3}
+      - {type: postscript, marker: P.S.}
+    reference: |-
+      | Language | Strength | Weakness |
+      |---|---|---|
+      | Python | Readable syntax | Slower runtime |
+      | JavaScript | Runs in every browser | Quirky type coercion |
+      | Go | Simple concurrency | Fewer beginner tutorials |
+
+      P.S. Any of them is a fine first choice.
+
+  - id: if-04
+    task: Write a short motivational message for a team the night before a product launch.
+    instructions:
+      - {type: keyword_count, keyword: together, at_least: 2}
+      - {type: ends_with, phrase: "Let's ship it!"}
+    reference: >-
+      We built this together, and tomorrow we launch it together. Get some rest tonight.
+      Let's ship it!
+
+  - id: if-05
+    task: Describe the water cycle.
+    instructions:
+      - {type: paragraphs, n: 3}
+      - {type: forbidden_words, words: [rain]}
+    reference: |-
+      The sun heats oceans and lakes, and water evaporates into the air as vapor.
+
+      As the vapor rises it cools and condenses into tiny droplets that form clouds.
+
+      When the droplets grow heavy they fall back to the ground as precipitation, flow into
+      rivers and seas, and the cycle begins again.
+
+  - id: if-06
+    task: Write a product announcement for a new coffee grinder.
+    instructions:
+      - {type: title}
+      - {type: placeholders, at_least: 2}
+      - {type: max_words, n: 120}
+    reference: |-
+      <<Meet the Grindmaster One>>
+
+      Our new burr grinder gives you a consistent grind for espresso or pour-over. It
+      launches on [launch date] at a price of [price]. Pre-order today.
+
+  - id: if-07
+    task: Explain why the sky is blue to a ten-year-old.
+    instructions:
+      - {type: uppercase}
+      - {type: max_words, n: 60}
+    reference: >-
+      SUNLIGHT IS MADE OF MANY COLORS. WHEN IT HITS THE AIR, THE BLUE LIGHT BOUNCES AROUND
+      THE MOST, SO BLUE COMES AT YOU FROM EVERY PART OF THE SKY.
+
+  - id: if-08
+    task: List the planets of the solar system in order from the Sun.
+    instructions:
+      - {type: numbered_list, n: 8}
+      - {type: no_commas}
+    reference: |-
+      1. Mercury
+      2. Venus
+      3. Earth
+      4. Mars
+      5. Jupiter
+      6. Saturn
+      7. Uranus
+      8. Neptune
+
+  - id: if-09
+    task: Write a short email to a landlord asking them to fix a leaking kitchen tap.
+    instructions:
+      - {type: starts_with, phrase: Dear landlord}
+      - {type: postscript, marker: P.S.}
+    reference: |-
+      Dear landlord,
+
+      The kitchen tap in my flat has been leaking for a week. Could you arrange a repair?
+
+      Kind regards,
+      Alex
+
+      P.S. I am home every evening after 6 pm.
+
+  - id: if-10
+    task: Summarize the benefits of regular exercise.
+    instructions:
+      - {type: sections, n: 3}
+      - {type: min_words, n: 60}
+    reference: |-
+      SECTION 1
+      Regular exercise strengthens the heart and lungs, lowers blood pressure and helps keep
+      a healthy weight.
+
+      SECTION 2
+      It also improves mood, reduces stress and anxiety, and helps people sleep more deeply.
+
+      SECTION 3
+      Over the long term, staying active lowers the risk of diabetes, some cancers and the
+      age-related loss of muscle and bone, which keeps people independent for longer.
+
+  - id: if-11
+    task: Suggest a quick vegetarian dinner.
+    instructions:
+      - {type: highlights, at_least: 2}
+      - {type: ends_with, phrase: Enjoy your meal!}
+    reference: >-
+      Try a *chickpea curry*: fry onion and garlic, add curry paste, chickpeas and a tin of
+      tomatoes, and simmer for 15 minutes. Serve it with *warm naan*. Enjoy your meal!
+
+  - id: if-12
+    task: Describe your ideal weekend.
+    instructions:
+      - {type: quoted}
+      - {type: no_commas}
+    reference: >-
+      "Sleeping in on Saturday and then a long walk in the hills followed by a slow dinner
+      with friends. On Sunday a good book and an early night."
+
+  - id: if-13
+    task: Explain what an API is.
+    instructions:
+      - {type: keyword_count, keyword: interface, at_least: 2}
+      - {type: max_words, n: 80}
+      - {type: lowercase}
+    reference: >-
+      an api is an interface that lets one program ask another program for data or actions.
+      the interface defines which requests are allowed and what the answers look like, so
+      both sides can change their internals without breaking each other.
+
+  - id: if-14
+    task: Suggest names for a new neighborhood bakery.
+    instructions:
+      - {type: bullet_points, n: 5}
+      - {type: forbidden_words, words: [bread, cake]}
+    reference: |-
+      - The Rising Crumb
+      - Flour & Ember
+      - Morning Crust
+      - Sweet Corner
+      - Golden Oven
+
+  - id: if-15
+    task: Give instructions for brewing a cup of green tea.
+    instructions:
+      - {type: numbered_list, n: 5}
+      - {type: ends_with, phrase: Enjoy your tea.}
+    reference: |-
+      1. Heat water to about 80 °C.
+      2. Put one teaspoon of leaves in a cup or pot.
+      3. Pour the water over the leaves.
+      4. Steep for two to three minutes.
+      5. Strain and serve.
+
+      Enjoy your tea.
+
+  - id: if-16
+    task: Compare trains and planes for a 500 km trip.
+    instructions:
+      - {type: markdown_table, rows: 4, columns: 3}
+      - {type: title}
+    reference: |-
+      <<Train vs plane for 500 km>>
+
+      | Factor | Train | Plane |
+      |---|---|---|
+      | Door-to-door time | About 3.5 hours | About 3.5 hours |
+      | Cost | Moderate | Varies widely |
+      | Comfort | Spacious seats | Cramped seats |
+      | Emissions | Low | High |
+
+  - id: if-17
+    task: Write a short poem about the ocean.
+    instructions:
+      - {type: lowercase}
+      - {type: no_commas}
+      - {type: max_words, n: 30}
+    reference: |-
+      grey waves fold and break
+      salt on the cold morning wind
+      the tide keeps its time
+
+  - id: if-18
+    task: Explain the difference between RAM and storage.
+    instructions:
+      - {type: paragraphs, n: 2}
+      - {type: starts_with, phrase: In short}
+    reference: |-
+      In short, RAM is fast temporary memory and storage is slower permanent memory.
+
+      RAM holds the programs and data the computer is using right now and is cleared when
+      the power goes off. Storage, such as an SSD, keeps files even when the computer is off.
+
+  - id: if-19
+    task: Write a short bio for a fictional chef.
+    instructions:
+      - {type: placeholders, at_least: 3}
+      - {type: min_words, n: 50}
+    reference: >-
+      [Chef name] grew up in [hometown], where she learned to cook in her grandmother's
+      kitchen. After training in Lyon, she opened [restaurant name], a small bistro known for
+      seasonal vegetables and slow-cooked stews. She believes good food starts with good
+      farmers and spends her mornings at the market choosing what to cook that night.
+
+  - id: if-20
+    task: Give advice for a first job interview.
+    instructions:
+      - {type: sections, n: 2}
+      - {type: highlights, at_least: 3}
+    reference: |-
+      SECTION 1
+      Before the interview, *research the company* and *prepare short stories* about your
+      past work.
+
+      SECTION 2
+      During the interview, listen carefully, answer with examples and
+      *ask a thoughtful question* at the end.
+
+  - id: if-21
+    task: Describe a sunset at the beach.
+    instructions:
+      - {type: uppercase}
+      - {type: no_commas}
+    reference: >-
+      THE SUN SINKS INTO THE SEA AND PAINTS THE WATER ORANGE AND PINK. THE WAVES GROW QUIET
+      AND THE SAND COOLS UNDER YOUR FEET.
+
+  - id: if-22
+    task: Explain how to restart a home Wi-Fi router.
+    instructions:
+      - {type: numbered_list, n: 4}
+      - {type: postscript, marker: P.S.}
+    reference: |-
+      1. Unplug the router from the power socket.
+      2. Wait about 30 seconds.
+      3. Plug it back in.
+      4. Wait until the lights are steady, then reconnect.
+
+      P.S. If the problem keeps coming back, contact your internet provider.
+
+  - id: if-23
+    task: Write a social media post announcing a library's new opening hours.
+    instructions:
+      - {type: max_words, n: 40}
+      - {type: keyword_count, keyword: library, at_least: 2}
+      - {type: ends_with, phrase: "#ReadMore"}
+    reference: >-
+      Good news: the library is now open until 9 pm on weekdays and from 10 am on Sundays.
+      Come study, borrow or just relax at your library. #ReadMore
+
+  - id: if-24
+    task: Explain what machine learning is.
+    instructions:
+      - {type: quoted}
+      - {type: max_words, n: 50}
+    reference: >-
+      "Machine learning is a way of building software that learns patterns from examples
+      instead of following hand-written rules. Given enough data, it can make predictions
+      about new cases."
+
+  - id: if-25
+    task: Describe three hobbies that help people relax.
+    instructions:
+      - {type: bullet_points, n: 3}
+      - {type: highlights, at_least: 3}
+    reference: |-
+      - *Gardening* gets you outside and keeps your hands busy.
+      - *Reading* lets you step into another world.
+      - *Yoga* slows your breathing and loosens tight muscles.
+
+  - id: if-26
+    task: Write the opening of a short story about a lighthouse keeper.
+    instructions:
+      - {type: title}
+      - {type: forbidden_words, words: [storm, dark]}
+    reference: |-
+      <<The Last Keeper>>
+
+      Every evening at six, Mara climbed the hundred and twelve steps to light the lamp. The
+      ships had stopped coming years ago, but she climbed anyway.
+
+  - id: if-27
+    task: Write a packing list for a weekend camping trip.
+    instructions:
+      - {type: markdown_table, rows: 5, columns: 2}
+      - {type: lowercase}
+    reference: |-
+      | item | why |
+      |---|---|
+      | tent | shelter for two nights |
+      | sleeping bag | warmth at night |
+      | headlamp | light after sunset |
+      | water filter | safe drinking water |
+      | first aid kit | small injuries |
+
+  - id: if-28
+    task: Explain the rules of tic-tac-toe.
+    instructions:
+      - {type: min_words, n: 60}
+      - {type: keyword_count, keyword: grid, at_least: 2}
+      - {type: no_commas}
+    reference: >-
+      Tic-tac-toe is played by two players on a grid of three rows and three columns. One
+      player uses X and the other uses O. They take turns placing their mark in an empty
+      square of the grid. The first player to get three marks in a row wins. The row can be
+      horizontal or vertical or diagonal. If all nine squares are filled and nobody has
+      three in a row the game is a draw.
+
+  - id: if-29
+    task: Write a thank-you note to a colleague named Sam who helped you finish a project.
+    instructions:
+      - {type: starts_with, phrase: Hi Sam}
+      - {type: ends_with, phrase: Thanks again!}
+      - {type: max_words, n: 70}
+    reference: |-
+      Hi Sam,
+
+      I could not have finished the migration on time without your help with the test
+      suite. You stayed late twice and caught bugs I would have missed.
+
+      Thanks again!
+
+  - id: if-30
+    task: Give arguments for and against working from home.
+    instructions:
+      - {type: sections, n: 2}
+      - {type: bullet_points, n: 6}
+    reference: |-
+      SECTION 1
+      - No commute
+      - Fewer interruptions
+      - Flexible hours
+
+      SECTION 2
+      - Less social contact
+      - Blurred work-life boundaries
+      - Harder to collaborate spontaneously
+
+  - id: if-31
+    task: Write a template for a meeting invitation.
+    instructions:
+      - {type: placeholders, at_least: 3}
+      - {type: paragraphs, n: 3}
+    reference: |-
+      Hello [name],
+
+      You are invited to a meeting about [topic] on [date] at [time] in [room].
+
+      Please reply to confirm whether you can attend.
+
+  - id: if-32
+    task: Write a safety warning sign for a wet floor.
+    instructions:
+      - {type: uppercase}
+      - {type: max_words, n: 20}
+    reference: "CAUTION: WET FLOOR. PLEASE WALK SLOWLY AND HOLD THE HANDRAIL."

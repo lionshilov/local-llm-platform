@@ -84,7 +84,7 @@ Lessons found while building this, each with the fix applied in this repo.
    weight); MLX 4-bit stores an integer scale and bias per group of 64 weights (~4.5 bits);
    NVFP4 stores 4-bit floats with an FP8 scale per block of 16 (~4.5 bits). Equal labels,
    different sizes and different quality. Compare speed *and* quality before calling one
-   engine faster (quality is covered by the eval harness).
+   engine faster (quality is covered by the [eval harness](../packages/evals)).
 
 7. **mlx_lm.server is a reference server, not a production one.** It warns about this on
    startup. Use it for experiments and put the gateway in front for auth, limits and
