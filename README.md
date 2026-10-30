@@ -17,7 +17,16 @@ tool-calling **agent harness** and an **eval harness** written from scratch, and
 **Prometheus + Grafana** stack with SLO alerts. Every claim below is measured, and the
 measurement code is in the repo.
 
-<!-- SCREENSHOT -->
+<p align="center">
+  <img src="docs/assets/arena.gif" alt="Arena mode: llama.cpp and MLX-LM stream answers to the same prompt side by side" width="100%">
+</p>
+
+| Chat with thinking, LaTeX and live metrics | Arena verdict with fair timing |
+|---|---|
+| ![Chat UI: a reasoning answer with rendered LaTeX, thought for 21.3 s, 307 ms TTFT, 41.1 tok/s](docs/assets/chat.png) | ![Arena: llama.cpp 1.56× faster to first token, MLX-LM 1.31× faster decode](docs/assets/arena.png) |
+
+The Arena's verdict on one prompt (llama.cpp 1.56× faster to first token, MLX-LM 1.31×
+faster decode) matches what the isolated benchmark below measures across 128 requests.
 
 ## Results: one model, four setups, one MacBook
 

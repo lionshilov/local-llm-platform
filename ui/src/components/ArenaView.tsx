@@ -89,6 +89,22 @@ export function ArenaView({
     for (const el of scrollRefs.current) if (el) el.scrollTop = el.scrollHeight;
   }, [lengths.join("|")]);
 
+  // Height also changes without new tokens (lazy-loaded markdown, KaTeX fonts, code
+  // highlighting), so observe the content and stay at the bottom.
+  const started = arena.columns.map((c) => c.messages.length > 0).join();
+  useEffect(() => {
+    const observers = scrollRefs.current.flatMap((scroller) => {
+      const content = scroller?.firstElementChild;
+      if (!scroller || !content) return [];
+      const observer = new ResizeObserver(() => {
+        scroller.scrollTop = scroller.scrollHeight;
+      });
+      observer.observe(content);
+      return [observer];
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, [started]);
+
   const [left, right] = arena.columns;
   const a = left ? lastReply(left.messages) : undefined;
   const b = right ? lastReply(right.messages) : undefined;

@@ -13,6 +13,9 @@ describe("preprocessMath", () => {
 
   it("keeps math that starts with a digit", () => {
     expect(preprocessMath("Complexity is $2^n$ here")).toBe("Complexity is $2^n$ here");
+    expect(preprocessMath("Subtract $1.00$ from both sides")).toBe(
+      "Subtract $1.00$ from both sides",
+    );
     expect(preprocessMath("$$2B = 0.10$$")).toBe("$$2B = 0.10$$");
   });
 

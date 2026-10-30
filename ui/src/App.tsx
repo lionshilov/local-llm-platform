@@ -48,6 +48,20 @@ export default function App() {
     if (el && stickToBottom.current) el.scrollTop = el.scrollHeight;
   }, [messages.length, lastContent, lastReasoning, chat.activeId]);
 
+  // Content also grows without new tokens: the markdown chunk loading, KaTeX fonts,
+  // code highlighting. Keep pinned to the bottom whenever the content resizes.
+  const contentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    const content = contentRef.current;
+    if (!scroller || !content) return;
+    const observer = new ResizeObserver(() => {
+      if (stickToBottom.current) scroller.scrollTop = scroller.scrollHeight;
+    });
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [messages.length > 0]);
+
   const current = models.find((m) => m.id === model) ?? null;
   const labelFor = (id?: string) => models.find((m) => m.id === id)?.label ?? id ?? "model";
   const online = !!current?.available;
@@ -176,7 +190,7 @@ export default function App() {
           {messages.length === 0 ? (
             <EmptyState modelLabel={current?.label ?? null} online={online} onPick={send} />
           ) : (
-            <div className="mx-auto w-full max-w-3xl space-y-8 px-4 pt-6 pb-10">
+            <div ref={contentRef} className="mx-auto w-full max-w-3xl space-y-8 px-4 pt-6 pb-10">
               {messages.map((message, index) => (
                 <MessageView
                   key={message.id}

@@ -15,6 +15,8 @@
 const CODE = /(```[\s\S]*?(?:```|$)|`[^`\n]*`)/g;
 const CURRENCY_DOLLAR = /(?<![\\$])\$(?=\d)/g;
 const MATH_HINT = /[\\^_{}=]/;
+// `$1.00$`: a number wrapped in its own delimiters is math; a price is never written so.
+const WRAPPED_NUMBER = /^\d[\d.,]*$/;
 const DISPLAY_MATH = /\$\$([\s\S]+?)\$\$/g;
 const DISPLAY_MATH_SPLIT = /(\$\$[\s\S]+?\$\$)/g;
 
@@ -33,7 +35,8 @@ function escapeCurrency(line: string): string {
   for (const match of line.matchAll(CURRENCY_DOLLAR)) {
     const start = match.index;
     const close = closingDollar(line, start + 1);
-    const looksLikeMath = close !== -1 && MATH_HINT.test(line.slice(start + 1, close));
+    const span = close === -1 ? "" : line.slice(start + 1, close);
+    const looksLikeMath = close !== -1 && (MATH_HINT.test(span) || WRAPPED_NUMBER.test(span));
     if (!looksLikeMath) {
       out += `${line.slice(last, start)}\\$`;
       last = start + 1;
